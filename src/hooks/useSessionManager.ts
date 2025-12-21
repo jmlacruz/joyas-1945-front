@@ -19,28 +19,12 @@ export const useSessionManager = (queryToken?: string | null) => {
     // Función centralizada de logout mejorada
     const performLogout = useCallback(async (shouldCheckCart = true) => {
         try {
-            // Enviar recordatorio de carrito solo si está habilitado y es necesario
-            if (shouldCheckCart && process.env.REACT_APP_SEND_CART_REMINDER && email) {
-                try {
-                    await checkCart({ userEmail: email });
-                } catch (error) {
-                    console.warn("Error al verificar carrito antes del logout:", error);
-                    // No bloqueamos el logout por un error en checkCart
-                }
-            }
-
-            // Realizar logout en el servidor
+            
             try {
                 await logOut();
             } catch (error) {
                 console.warn("Error al hacer logout en el servidor:", error);
-                // Continuamos con la limpieza local aunque falle el logout del servidor
             }
-
-            // Limpiar datos locales
-            clearSessionOfLocalStorage();
-            localStorage.removeItem("webtoken");
-            dispatch(clearUser());
         } catch (error) {
             console.error("Error durante el proceso de logout:", error);
             // Asegurar limpieza mínima en caso de error
