@@ -32,7 +32,7 @@ function Footer() {
                 </div>
             </div>
             <div className="footerBottomSection flex">
-                <p className="footerBottomSectionText">ALMACEN DE JOYAS COPYRIGHT - © 2024. TODOS LOS DERECHOS RESERVADOS. </p>
+                <p className="footerBottomSectionText">Joyas1945 COPYRIGHT - © 2024. TODOS LOS DERECHOS RESERVADOS. </p>
                 <a className={`footerBottomSectionTextImgLoading ${getColorTransitionClass()}`} href="https://imgloading.com.ar/" target="_blank" rel="noreferrer"> POR IMGLOADING / MARKETING DIGITAL </a>
             </div>
         </div>

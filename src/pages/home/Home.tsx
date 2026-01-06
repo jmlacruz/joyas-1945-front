@@ -915,7 +915,7 @@ function Home() {
                                 <p onClick={() => orderResultsBy("date")} role="date">Fecha de Subida</p>
                             </div>
                         </div>
-                        <p className="homePageOrderTextFindedQuantity">Se encontraron <span className="homePageOrderTextFindedQuantityBold">{productsFound} Productos</span> en <span className="homePageOrderTextFindedQuantityBold">Almacén de Joyas</span></p>
+                        <p className="homePageOrderTextFindedQuantity">Se encontraron <span className="homePageOrderTextFindedQuantityBold">{productsFound} Productos</span> en <span className="homePageOrderTextFindedQuantityBold">Joyas1945</span></p>
                     </div>
                 </div>
             </div>
