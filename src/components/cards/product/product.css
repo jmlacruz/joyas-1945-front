@@ -19,6 +19,16 @@
     z-index: 0;
 }
 
+.productCardSkeleton {
+    pointer-events: none;
+}
+
+.productCardSkeleton .react-loading-skeleton {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
 .productCardCont:hover,
 .productCardCont:focus-within {
     transform: translateY(-6px) scale(1.02);
