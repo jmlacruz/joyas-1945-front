@@ -14,13 +14,16 @@ export const userSlice = createSlice({
             streamChatToken: "",
             userId: "",
             city: "",
-            dolar: false,
+            dolar: true,
             token: "",
         } as SessionUserData
     },
     reducers: {
         setUser: (state, {payload: sessionUserData}: PayloadAction<SessionUserData>) => {
             state.value = sessionUserData;
+        },
+        setDolar: (state, {payload}: PayloadAction<boolean>) => {
+            state.value.dolar = payload;
         },
         clearUser: (state) => {
             state.value = {
@@ -33,12 +36,12 @@ export const userSlice = createSlice({
                 streamChatToken: "",
                 userId: "",
                 city: "",
-                dolar: false,
+                dolar: true,
                 token: "",
             };
         }
     },
 });
 
-export const { setUser, clearUser } = userSlice.actions;
+export const { setUser, clearUser, setDolar } = userSlice.actions;
 export default userSlice.reducer; 

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { StreamChatContext } from "../../../context/streamChatContext";
 import { addToCart, subtractToCart } from "../../../features/cartSlice";
@@ -10,8 +10,9 @@ import "./product.css";
 function Product (props: {
     description: string, 
     code: string, 
-    price: string, 
-    // stock: number, 
+    priceUSD?: number, 
+    priceARS?: number, 
+    // stock: number,
     imgSrc1: string, 
     imgSrc2: string, 
     productID: number, 
@@ -85,6 +86,18 @@ function Product (props: {
         imgsIndexs[0].classList.add("productCard_imgsIndexActive");
     };
          
+    const isUsd = props.dolar ?? true;
+    const priceValue = isUsd ? props.priceUSD : props.priceARS;
+    const formattedPrice = useMemo(() => {
+        if (priceValue === undefined || priceValue === null) return "";
+        const formatter = isUsd
+            ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
+            : new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
+        return formatter.format(priceValue);
+    }, [priceValue, isUsd]);
+
+    const currencyLabel = isUsd ? "USD" : "ARS";
+
     return (
         <div className="productCardCont flex column" title={props.description.toUpperCase()} onClick={runOnclickFunction} ref={productCardContRef}>
             {   
@@ -131,8 +144,8 @@ function Product (props: {
             <div className="productCard_Price_Cloth_Stock_Container flex column">
                 <div>
                     <div className="productCardPriceCont flex">
-                        <p className="productCardPriceSign">USD $</p>
-                        <p className="productCardPrice">{props.price}</p>
+                        <p className="productCardPriceSign">{currencyLabel}</p>
+                        <p className="productCardPrice">{formattedPrice}</p>
                     </div>
                     {
                         props.pano &&

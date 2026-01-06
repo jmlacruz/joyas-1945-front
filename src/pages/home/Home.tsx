@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "../../components/cards/product/Product";
 import ProductDetailModal from "../../components/productDetailModal/ProductDetailModal";
@@ -12,7 +12,7 @@ import { FiltersStatus, QuerysData } from "../../types";
 import { FilterOrderByTypes, Marca, Multiplicador, Pano, Panoxproducto, Producto } from "../../types/database";
 import { isValidJSON, parseFilterQuerys, showElement } from "../../utils/utils";
 
-import { formatDecimalPrice } from "../../utils/decimals";
+import { setDolar } from "../../features/userSlice";
 import "./home.css";
  
 const useQuery = () => new URLSearchParams(useLocation().search);                                                   //Función para leer querys de url
@@ -30,6 +30,7 @@ function Home() {
     const {showSpinner} = useContext(SpinnerContext);
     const [currentBrandImageSrc, setCurrentBrandImageSrc] = useState ("");
     const [products, setProducts] = useState <JSX.Element[] | null> (null);
+    const [productsData, setProductsData] = useState<Producto[] | null>(null);
     const [categories, setCategories] = useState <JSX.Element[]> ([]);
     const [productsFound, setProductsFound] = useState <number> (0);
     const [pagesIndex, setPagesIndex] = useState <JSX.Element[]> ([]); 
@@ -48,6 +49,17 @@ function Home() {
         pano: null,
         panoxproducto: null
     });
+
+    const getPano = (productId: number) => {
+        if (panosTables.current.pano && panosTables.current.panoxproducto) {
+            const idPano = panosTables.current.panoxproducto.find((panoxproducto: Panoxproducto) => panoxproducto.id_producto === productId)?.id_pano;
+            if (!idPano) return "";
+            const panoName = panosTables.current.pano.find((pano: Pano) => pano.id === idPano)?.nombre;
+            if (!panoName) return "";
+            return panoName;
+        }
+        return "";
+    };
      
     const searchWordsArrInOBJ: string[] = isValidJSON(searchWordsStr) ? JSON.parse(searchWordsStr) : [];
     const searchWordsArrInJSON = JSON.stringify(searchWordsArrInOBJ);
@@ -70,6 +82,8 @@ function Home() {
 
     const { streamChat } = useContext(StreamChatContext);
     const { email, city, name, lastName, dolar } = useSelector((state: RootState) => state.user.value);
+    const dispatch = useDispatch();
+    const currencyIsUsd = dolar ?? true;
         
     let pageNumberFromQuery = pageString ? parseInt(pageString) : 1;                                                //Si pageString es un "string" parseInt da NaN, entonces pageNumberFromQuery = NaN (que equivale a false)
     if (!pageNumberFromQuery || pageNumberFromQuery < 1 || pageNumberFromQuery%1 !== 0) pageNumberFromQuery = 1;
@@ -334,7 +348,7 @@ function Home() {
                 }, 
                 searchWordsArr: searchWordsArrInOBJ, 
                 categoriesIdsArr: categoriesArrInOBJ,
-                priceRangeArr: priceRangeArrOBJ.length ? (dolar ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
+                priceRangeArr: priceRangeArrOBJ.length ? (currencyIsUsd ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
                 brand: brandId || activeBrands[0].id.toString(),
             });               
             const productsFound = response1.data;
@@ -388,7 +402,7 @@ function Home() {
                 },
                 searchWordsArr: searchWordsArrInOBJ,
                 categoriesIdsArr: categoriesArrInOBJ,
-                priceRangeArr: priceRangeArrOBJ.length ? (dolar ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
+                priceRangeArr: priceRangeArrOBJ.length ? (currencyIsUsd ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
                 orderBy: orderBy || "default",
                 brand: brandId || activeBrands[0].id,
             });          
@@ -430,44 +444,18 @@ function Home() {
                 };
             }
 
-            const getPano = (productId: number) => {
-                if (panosTables.current.pano && panosTables.current.panoxproducto) {
-                    const idPano = panosTables.current.panoxproducto.find((panoxproducto: Panoxproducto) => panoxproducto.id_producto === productId)?.id_pano;
-                    if (!idPano) return "";
-                    const panoName = panosTables.current.pano.find((pano: Pano) => pano.id === idPano)?.nombre;
-                    if (!panoName) return "";
-                    return panoName;                        
-                } else {
-                    return "";
-                }
-            };
-
             /************************* Renderizado de cards ***************************/
                        
             if (response2.success && response2.data.length && response1.success && response1.data) {
-  
-                const productsJSX = response2.data.map((data: Producto, index: number) => 
-                    <ProductCard 
-                        description={data.nombre}  
-                        code={data.codigo} 
-                        price={data.precioDolar && data.precio ? (dolar ? (formatDecimalPrice(data.precioDolar)) : Math.ceil(data.precio).toString()) : ""} 
-                        // stock={data.stock} 
-                        key={index}
-                        imgSrc1={data.thumbnail1}
-                        imgSrc2={data.thumbnail2}
-                        productID= {data.id}
-                        onClickFunction={showProductDetails}
-                        pano={getPano(data.id)}
-                        dolar={dolar}
-                    />
-                );
+
+                setProductsData(response2.data);
                 setProductsFound(productsFound);
                 setPagesIndex(pagesIndexJSX);
-                setProducts(productsJSX);
             } else if (response2.success && !response2.data.length) {
                 setProductsFound(productsFound);
                 setPagesIndex(pagesIndexJSX);
                 setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
+                setProductsData([]);
             } else {
                 if (!response1.success) console.log(response1.message);
                 if (!response2.success) console.log(response2.message);
@@ -593,6 +581,35 @@ function Home() {
     };
     
     useEffect(() => {
+        if (!productsData || !productsData.length) return;
+        const mult = globalMultiplierRef.current || 0;
+        const productsJSX = productsData.map((data: Producto, index: number) => {
+            const ars = data.precio;
+            const usd = data.precioDolar ?? (mult ? ars / mult : undefined);
+            let priceARS = ars ?? ((data.precioDolar && mult) ? data.precioDolar * mult : undefined);
+            if (priceARS !== undefined && priceARS < 1000 && usd !== undefined && mult > 50) {
+                priceARS = usd * mult;
+            }
+            return (
+                <ProductCard 
+                    description={data.nombre}  
+                    code={data.codigo} 
+                    priceUSD={usd} 
+                    priceARS={priceARS} 
+                    key={index}
+                    imgSrc1={data.thumbnail1}
+                    imgSrc2={data.thumbnail2}
+                    productID= {data.id}
+                    onClickFunction={showProductDetails}
+                    pano={getPano(data.id)}
+                    dolar={currencyIsUsd}
+                />
+            );
+        });
+        setProducts(productsJSX);
+    }, [productsData, currencyIsUsd]);
+    
+    useEffect(() => {
         
         // Mostrar inmediatamente todos los componentes que no son productos
         showElement(true);
@@ -643,6 +660,11 @@ function Home() {
         saveScrollPosition();
         saveInputsState();
         navigate(`/home?page=1&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${priceRangeArrJSON}&orderBy=${orderBy}&brand=${brandId}`);
+    };
+
+    const handleCurrencyToggle = (isUsdSelected: boolean) => {
+        if (isUsdSelected === currencyIsUsd) return;
+        dispatch(setDolar(isUsdSelected));
     };
 
     const calculateNextPage = () => {
@@ -825,7 +847,7 @@ function Home() {
             },
             searchWordsArr: searchWordsArrWithoutEmptyStrings,
             categoriesIdsArr: categoriesArrInOBJ,
-            priceRangeArr: priceRangeArrOBJ.length ? (dolar ? [priceRangeArrOBJ[0] * globalMultiplierRef.current, priceRangeArrOBJ[1] * globalMultiplierRef.current] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
+            priceRangeArr: priceRangeArrOBJ.length ? (currencyIsUsd ? [priceRangeArrOBJ[0] * globalMultiplierRef.current, priceRangeArrOBJ[1] * globalMultiplierRef.current] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
             orderBy: orderBy || "default",
             brand: brandId || activeBrandsRef.current[0].id
         });          
@@ -923,6 +945,25 @@ function Home() {
             <div className="filtersShownCont">                                                                 {/* Ventana de tipo de productos y filtrado por rango de precios */}
                 <div className="filtersShownIntCont">
                     <div className="filtersShownInt2Cont flex wrap">
+                        <div className="filtersCurrencyToggleCont filtersShownInternalCont flex">
+                            <span className="visuallyHidden" aria-hidden="true">Moneda</span>
+                            <div className="homePageCurrencyToggleCont flex" role="group" aria-label="Seleccionar moneda">
+                                <button
+                                    className={`currencyToggleOption ${currencyIsUsd ? "active" : ""}`}
+                                    aria-pressed={currencyIsUsd}
+                                    onClick={() => handleCurrencyToggle(true)}
+                                >
+                                    USD
+                                </button>
+                                <button
+                                    className={`currencyToggleOption ${!currencyIsUsd ? "active" : ""}`}
+                                    aria-pressed={!currencyIsUsd}
+                                    onClick={() => handleCurrencyToggle(false)}
+                                >
+                                    ARS
+                                </button>
+                            </div>
+                        </div>
                         <div className="filtersShownTypesCont filtersShownInternalCont flex">
                             <p className="filtersShownTitle">Tipo</p>
                             <div className="filtersShownTypes flex">
@@ -930,7 +971,7 @@ function Home() {
                             </div>
                         </div>
                         <div className="filtersPriceRangeCont filtersShownInternalCont flex">
-                            <p className="filterPriceRangeTitle">Rango de precio</p>
+                            <p className="filterPriceRangeTitle">RANGO DE<br />PRECIO</p>
                             <div className="filterPriceInputsCont flex">
                                 <input type="number" className="filterPriceInput filterPriceInputMin" defaultValue={priceRange && priceRange.length ? priceRange[0] : ""} />
                                 -
