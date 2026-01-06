@@ -1,6 +1,8 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import ProductCard from "../../components/cards/product/Product";
 import ProductDetailModal from "../../components/productDetailModal/ProductDetailModal";
 import { SpinnerContext } from "../../context/spinnerContext";
@@ -16,6 +18,12 @@ import { setDolar } from "../../features/userSlice";
 import "./home.css";
  
 const useQuery = () => new URLSearchParams(useLocation().search);                                                   //Función para leer querys de url
+const DEBUG_HOME = process.env.NODE_ENV === "development";
+
+const debugLog = (...args: any[]) => {
+    if (!DEBUG_HOME) return;
+    console.log("[HOME_DEBUG]", ...args);
+};
 
 function Home() {
 
@@ -42,6 +50,8 @@ function Home() {
     const orderBy = query.get("orderBy") as FilterOrderByTypes | "" || "";
     const brandId = query.get("brand") as string || "";
     const resultsByPage = 60;                   //<------- Si se cambia este valor también hay que cambiarlo en el dashboard en "ProductsOrder.page.tsx"
+    const skeletonCount = Math.min(resultsByPage, 12);
+    const productsCacheRef = useRef<Map<string, {items: Producto[]; productsFound: number}>>(new Map());
     const panosTables = useRef <{
         pano: Pano[] | null,
         panoxproducto: Panoxproducto[] | null,
@@ -60,6 +70,29 @@ function Home() {
         }
         return "";
     };
+
+    const buildCacheKeyForPage = (page: number, brandToUse: string) => JSON.stringify({
+        page,
+        searchWords: searchWordsArrInOBJ,
+        categories: categoriesArrInOBJ,
+        priceRange: priceRangeArrOBJ,
+        orderBy: orderBy || "default",
+        brand: brandToUse
+    });
+
+    const parseProductsTotal = (data: any): number => {
+        if (typeof data === "number") return data;
+        if (data && typeof data === "object") {
+            return data.rowsQuantity ?? data.count ?? data.total ?? 0;
+        }
+        return 0;
+    };
+
+    const renderSkeletons = () => Array.from({length: skeletonCount}, (_, index) => (
+        <div className="productCardCont productCardSkeleton" key={`skeleton-${index}`}>
+            <Skeleton height="100%" width="100%" />
+        </div>
+    ));
      
     const searchWordsArrInOBJ: string[] = isValidJSON(searchWordsStr) ? JSON.parse(searchWordsStr) : [];
     const searchWordsArrInJSON = JSON.stringify(searchWordsArrInOBJ);
@@ -70,6 +103,7 @@ function Home() {
     const [priceRange, setPriceRange] = useState <[number, number] | ["", ""] | null> (null);
     const [searchWords, setSearchWords] = useState <string[]> ([]);
     const globalMultiplierRef = useRef (0);
+    const activeRequestIdRef = useRef(0);
  
     const [searchWordsResults, setSearchWordsResults] = useState <JSX.Element[]> ([]);
     const activeBrandsRef = useRef <Marca[]> ([]);
@@ -277,6 +311,8 @@ function Home() {
         const firstProduct = (pageNumberFromQuery - 1) * resultsByPage;                                                             //firstProduct: A partir de que producto se muestra la página -> si offset = firstProduct = 0 se muestra desde el primero
        
         (async () => {
+            const requestId = ++activeRequestIdRef.current;
+            debugLog("FETCH_START", {requestId, page: pageNumberFromQuery});
             
             const resetFilterInputs = () => {
                 const productTypeInputs = document.querySelectorAll(".filterCheckBox_hidden") as NodeListOf <HTMLInputElement>;
@@ -338,9 +374,96 @@ function Home() {
             );                                      
             brandsJSX.length ? setBrands(brandsJSX) : setBrands([]);
 
-            /************************** Obtenemos la cantidad de filas que devuelve la busqueda actual ******************************/
+            const brandToUse = brandId || activeBrands[0].id.toString();
+            const cacheKey = buildCacheKeyForPage(pageNumberFromQuery, brandToUse);
+            const priceRangeForFilters = priceRangeArrOBJ.length ? (currencyIsUsd ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [];
+            debugLog("CACHE_CHECK", {requestId, cacheKey, page: pageNumberFromQuery});
 
-            const response1 = await getProductsFilteredRowsQuantity({                                                          
+            const setPagination = (productsFoundLocal: number) => {
+                quantityOfPages.current = Math.ceil(productsFoundLocal / resultsByPage);
+                if (quantityOfPages.current > 0 && pageNumberFromQuery > quantityOfPages.current) return (navigate("/home?page=1"));
+
+                const pagesIndexArr = [];
+                for (let i = 1; i <= quantityOfPages.current; i++) pagesIndexArr.push(i);
+                
+                let maxPageArrIndex = pageNumberFromQuery + 2;
+                let minPageArrIndex = pageNumberFromQuery - 3;
+                if (pagesIndexArr.length <= 5) {
+                    minPageArrIndex = 0;
+                    maxPageArrIndex = pagesIndexArr.length;
+                } else {
+                    if (maxPageArrIndex > pagesIndexArr.length) {
+                        const excededMaxLegth = maxPageArrIndex - pagesIndexArr.length;
+                        minPageArrIndex -= excededMaxLegth;
+                    } else if (minPageArrIndex < 0) {
+                        const excededMinLegth = Math.abs(minPageArrIndex);
+                        maxPageArrIndex += excededMinLegth;
+                    }
+                }          
+                if (maxPageArrIndex > pagesIndexArr.length) maxPageArrIndex = pagesIndexArr.length;
+                if (minPageArrIndex < 0) minPageArrIndex = 0;
+
+                const pagesIndexArrSegmented = pagesIndexArr.slice(minPageArrIndex, maxPageArrIndex);
+                const pagesIndexJSX = pagesIndexArrSegmented.map((numberOfPage, index) => 
+                    <div 
+                        onClick={() => navigate(`/home?page=${numberOfPage}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${brandId}`) } 
+                        key={index} 
+                        className="homeNumberOfPage homePaginationButton opcionHoverPinkTransition flex">
+                        {numberOfPage}
+                    </div>
+                );
+                setPagesIndex(pagesIndexJSX);
+            };
+
+            const cached = productsCacheRef.current.get(cacheKey);
+            if (cached) {
+                const cachedTotal = cached.productsFound ?? 0;
+                if (requestId === activeRequestIdRef.current) {
+                    debugLog("CACHE_HIT", {requestId, cacheKey, page: pageNumberFromQuery, total: cachedTotal, items: cached.items.length});
+                    setProductsFound(cachedTotal);
+                    setPagination(cachedTotal);
+                    setProductsData(cached.items);
+                    if (!cached.items.length) {
+                        setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
+                    }
+                }
+
+                const prefetchNextPage = async (nextPage: number, priceRangeForFiltersParam: number[] | []) => {
+                    if (!quantityOfPages.current || nextPage > quantityOfPages.current) return;
+                    const nextKey = buildCacheKeyForPage(nextPage, brandToUse);
+                    if (productsCacheRef.current.has(nextKey)) return;
+                    const nextOffset = (nextPage - 1) * resultsByPage;
+                    debugLog("PREFETCH_START", {requestId, cacheKey: nextKey, page: nextPage});
+                    const nextProductsResponse = await getProductsFiltered({
+                        limit: resultsByPage,
+                        offset: nextOffset,
+                        fields: ["nombre", "precio", "codigo", "foto1", "foto2", "id"],
+                        condition: {
+                            field: "estado",
+                            operator: "=",
+                            value: "1"
+                        },
+                        searchWordsArr: searchWordsArrInOBJ,
+                        categoriesIdsArr: categoriesArrInOBJ,
+                        priceRangeArr: priceRangeForFiltersParam,
+                        orderBy: orderBy || "default",
+                        brand: brandToUse,
+                    });
+                    if (nextProductsResponse.success && nextProductsResponse.data) {
+                        productsCacheRef.current.set(nextKey, {items: nextProductsResponse.data, productsFound: cachedTotal});
+                        debugLog("PREFETCH_DONE", {requestId, cacheKey: nextKey, page: nextPage, items: nextProductsResponse.data.length, total: cachedTotal});
+                    }
+                    if (!nextProductsResponse.success) debugLog("PREFETCH_ERROR", {requestId, cacheKey: nextKey, page: nextPage, message: nextProductsResponse.message});
+                };
+
+                prefetchNextPage(pageNumberFromQuery + 1, priceRangeForFilters);
+                return;
+            } else {
+                debugLog("CACHE_MISS_SHOW_SKELETONS", {requestId, cacheKey, page: pageNumberFromQuery});
+                setProducts(renderSkeletons());
+            }
+
+            const rowsPromise = getProductsFilteredRowsQuantity({                                                          
                 condition: {
                     field: "estado", 
                     operator: "=", 
@@ -348,52 +471,13 @@ function Home() {
                 }, 
                 searchWordsArr: searchWordsArrInOBJ, 
                 categoriesIdsArr: categoriesArrInOBJ,
-                priceRangeArr: priceRangeArrOBJ.length ? (currencyIsUsd ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
-                brand: brandId || activeBrands[0].id.toString(),
+                priceRangeArr: priceRangeForFilters,
+                brand: brandToUse,
             });               
-            const productsFound = response1.data;
-            quantityOfPages.current = Math.ceil(productsFound / resultsByPage);
 
-            /******************************************** Seteo de paginación ***********************************/
-
-            if (quantityOfPages.current > 0 && pageNumberFromQuery > quantityOfPages.current) return (navigate("/home?page=1"));
-
-            const pagesIndexArr = [];
-            for (let i = 1; i <= quantityOfPages.current; i++) pagesIndexArr.push(i);                                         //Generamos array con todas las paginas
-            
-            let maxPageArrIndex = pageNumberFromQuery + 2;                                                                    //Lógica para calcular los números de páginas que se muestran   
-            let minPageArrIndex = pageNumberFromQuery - 3;                                                                    //  en la barra de paginación
-            if (pagesIndexArr.length <= 5) {
-                minPageArrIndex = 0;
-                maxPageArrIndex = pagesIndexArr.length;
-            } else {
-                if (maxPageArrIndex > pagesIndexArr.length) {
-                    const excededMaxLegth = maxPageArrIndex - pagesIndexArr.length;
-                    minPageArrIndex -= excededMaxLegth;
-                } else if (minPageArrIndex < 0) {
-                    const excededMinLegth = Math.abs(minPageArrIndex);
-                    maxPageArrIndex += excededMinLegth;
-                }
-            }          
-            if (maxPageArrIndex > pagesIndexArr.length) maxPageArrIndex = pagesIndexArr.length;
-            if (minPageArrIndex < 0) minPageArrIndex = 0;
-
-            const pagesIndexArrSegmented = pagesIndexArr.slice(minPageArrIndex, maxPageArrIndex);                           //Del array con todas las paginas obtenemos la actual, las 2 anteriores y las dos posteriores
-            const pagesIndexJSX = pagesIndexArrSegmented.map((numberOfPage, index) => 
-                <div 
-                    onClick={() => navigate(`/home?page=${numberOfPage}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${brandId}`) } 
-                    key={index} 
-                    className="homeNumberOfPage homePaginationButton opcionHoverPinkTransition flex">
-                    {numberOfPage}
-                </div>
-            );
-
-            /****************************************************************************************************/
-            
-            const response2 = await getProductsFiltered({
+            const productsPromise = getProductsFiltered({
                 limit: resultsByPage, 
                 offset: firstProduct , 
-                // fields: ["nombre", "precio", "stock", "codigo", "foto1", "foto2", "id"],                                             //Si requerimos el campo "foto1" (ruta de imagen) el backend agrega el campo "thumbnail" (ruta de thumbnail) automaticamente
                 fields: ["nombre", "precio", "codigo", "foto1", "foto2", "id"],                                             //Si requerimos el campo "foto1" (ruta de imagen) el backend agrega el campo "thumbnail" (ruta de thumbnail) automaticamente
                 condition: {
                     field: "estado", 
@@ -402,10 +486,75 @@ function Home() {
                 },
                 searchWordsArr: searchWordsArrInOBJ,
                 categoriesIdsArr: categoriesArrInOBJ,
-                priceRangeArr: priceRangeArrOBJ.length ? (currencyIsUsd ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
+                priceRangeArr: priceRangeForFilters,
                 orderBy: orderBy || "default",
-                brand: brandId || activeBrands[0].id,
-            });          
+                brand: brandToUse,
+            });
+
+            const [response1, response2] = await Promise.all([rowsPromise, productsPromise]);
+            const rowsTotal = parseProductsTotal(response1.data);
+
+            if (requestId !== activeRequestIdRef.current) {
+                debugLog("FETCH_STALE_EXIT", {requestId, cacheKey, page: pageNumberFromQuery});
+                return;
+            }
+
+            if (response1.success && response2.success && response2.data && response2.data.length) {
+                productsCacheRef.current.set(cacheKey, {items: response2.data, productsFound: rowsTotal});
+                if (requestId !== activeRequestIdRef.current) {
+                    debugLog("FETCH_STALE_EXIT_AFTER_CACHE_SET", {requestId, cacheKey, page: pageNumberFromQuery});
+                    return;
+                }
+                debugLog("FETCH_DONE", {requestId, cacheKey, page: pageNumberFromQuery, total: rowsTotal, items: response2.data.length});
+                setProductsFound(rowsTotal);
+                setPagination(rowsTotal);
+                setProductsData(response2.data);
+            } else if (response1.success && response2.success && response2.data && !response2.data.length) {
+                const productsFoundLocal = rowsTotal;
+                if (requestId !== activeRequestIdRef.current) {
+                    debugLog("FETCH_STALE_EXIT_NO_RESULTS", {requestId, cacheKey, page: pageNumberFromQuery});
+                    return;
+                }
+                debugLog("FETCH_NO_RESULTS", {requestId, cacheKey, page: pageNumberFromQuery, total: productsFoundLocal, items: 0});
+                setProductsFound(productsFoundLocal);
+                setPagination(productsFoundLocal);
+                setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
+                setProductsData([]);
+                productsCacheRef.current.set(cacheKey, {items: [], productsFound: productsFoundLocal});
+            } else {
+                debugLog("FETCH_ERROR", {requestId, cacheKey, page: pageNumberFromQuery, msg1: response1.message, msg2: response2.message});
+                if (!response1.success) console.log(response1.message);
+                if (!response2.success) console.log(response2.message);
+                showElement(true);
+                showSpinner(false);
+            }
+
+            const prefetchNextPage = async (nextPage: number, priceRangeForFiltersParam: number[] | []) => {
+                if (!quantityOfPages.current || nextPage > quantityOfPages.current) return;
+                const nextKey = buildCacheKeyForPage(nextPage, brandToUse);
+                if (productsCacheRef.current.has(nextKey)) return;
+                const nextOffset = (nextPage - 1) * resultsByPage;
+                const nextProductsResponse = await getProductsFiltered({
+                    limit: resultsByPage,
+                    offset: nextOffset,
+                    fields: ["nombre", "precio", "codigo", "foto1", "foto2", "id"],
+                    condition: {
+                        field: "estado",
+                        operator: "=",
+                        value: "1"
+                    },
+                    searchWordsArr: searchWordsArrInOBJ,
+                    categoriesIdsArr: categoriesArrInOBJ,
+                    priceRangeArr: priceRangeForFiltersParam,
+                    orderBy: orderBy || "default",
+                    brand: brandToUse,
+                });
+                if (nextProductsResponse.success && nextProductsResponse.data) {
+                    productsCacheRef.current.set(nextKey, {items: nextProductsResponse.data, productsFound: rowsTotal});
+                }
+            };
+
+            if (response1.success && response2.success && response2.data && response2.data.length) prefetchNextPage(pageNumberFromQuery + 1, priceRangeForFilters);
 
             /************************** Obtenemos las categorías para listarlas en el filtro ******************************/
              
@@ -450,10 +599,10 @@ function Home() {
 
                 setProductsData(response2.data);
                 setProductsFound(productsFound);
-                setPagesIndex(pagesIndexJSX);
+                setPagination(productsFound);
             } else if (response2.success && !response2.data.length) {
                 setProductsFound(productsFound);
-                setPagesIndex(pagesIndexJSX);
+                setPagination(productsFound);
                 setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
                 setProductsData([]);
             } else {

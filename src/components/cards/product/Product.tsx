@@ -123,6 +123,8 @@ function Product (props: {
                     <img
                         src={props.imgSrc2}
                         alt="Jewelry"
+                        loading="lazy"
+                        decoding="async"
                         className="productCardImg"
                         onError={(e) => (e.target as HTMLImageElement).src = "/images/logos/logo_black.png"}            /*Si no esta la imagen del producto ponemos el logo de la joyeria*/
                     />  
@@ -130,6 +132,8 @@ function Product (props: {
                 <img 
                     src={props.imgSrc1} 
                     alt="Jewelry" 
+                    loading="lazy"
+                    decoding="async"
                     className="productCardImg" 
                     onError={(e) => (e.target as HTMLImageElement).src = "/images/logos/logo_black.png"}                 /*Si no esta la imagen del producto ponemos el logo de la joyeria*/
                 />    
