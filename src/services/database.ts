@@ -1,7 +1,6 @@
 import { verifyTokenAPIError } from "../data";
 import { CartDataForDBFromFront, UsersLogsOrigins } from "../types";
-import { Database_CustomResponse, Pano, Panoxproducto } from "../types/database";
-import { FilterOrderByTypes } from "../types/database";
+import { Database_CustomResponse, FilterOrderByTypes, Pano, Panoxproducto } from "../types/database";
 import { isValidNoEmptyArray } from "../utils/utils";
 
 export const getProductsFiltered = async (options: 
@@ -26,7 +25,8 @@ export const getProductsFiltered = async (options:
         const searchWordsJSON = options.searchWordsArr && options.searchWordsArr.length && Array.isArray(options.searchWordsArr) ? JSON.stringify(options.searchWordsArr) : JSON.stringify([]);
         const categoriesIdsArrJSON = options.categoriesIdsArr && options.categoriesIdsArr.length && Array.isArray(options.categoriesIdsArr) ? JSON.stringify(options.categoriesIdsArr) :  JSON.stringify([]);
         const priceRangeArrJSON = options.priceRangeArr && options.priceRangeArr.length && Array.isArray(options.priceRangeArr) ? JSON.stringify(options.priceRangeArr) : JSON.stringify([]);
-        const responseJSON = await fetch(`${process.env.REACT_APP_API_URL}/db/getProductsFiltered?limit=${options.limit}&fields=${fieldsJSON}&offset=${options.offset}&condition=${conditionJSON}&searchWords=${searchWordsJSON}&categories=${categoriesIdsArrJSON}&priceRange=${priceRangeArrJSON}&orderBy=${options.orderBy}&brand=${options.brand}`, {
+        const brandStr = typeof options.brand === "number" ? options.brand.toString() : options.brand;
+        const responseJSON = await fetch(`${process.env.REACT_APP_API_URL}/db/getProductsFiltered?limit=${options.limit}&fields=${encodeURIComponent(fieldsJSON)}&offset=${options.offset}&condition=${encodeURIComponent(conditionJSON)}&searchWords=${encodeURIComponent(searchWordsJSON)}&categories=${encodeURIComponent(categoriesIdsArrJSON)}&priceRange=${encodeURIComponent(priceRangeArrJSON)}&orderBy=${options.orderBy}&brand=${encodeURIComponent(brandStr)}`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${localStorage.getItem("webtoken")}`,
@@ -59,7 +59,7 @@ export const getProductsFilteredRowsQuantity = async (options:
     const categoriesIdsArrJSON = options.categoriesIdsArr && options.categoriesIdsArr.length && Array.isArray(options.categoriesIdsArr) ? JSON.stringify(options.categoriesIdsArr) : JSON.stringify([]);
     const priceRangeArrJSON = options.priceRangeArr && options.priceRangeArr.length && Array.isArray(options.priceRangeArr) ? JSON.stringify(options.priceRangeArr) : JSON.stringify([]);
     try {
-        const responseJSON = await fetch(`${process.env.REACT_APP_API_URL}/db/getProductsFilteredRowsQuantity?condition=${conditionJSON}&searchWords=${searchWordsJSON}&categories=${categoriesIdsArrJSON}&priceRange=${priceRangeArrJSON}&brand=${options.brand}`, { 
+        const responseJSON = await fetch(`${process.env.REACT_APP_API_URL}/db/getProductsFilteredRowsQuantity?condition=${encodeURIComponent(conditionJSON)}&searchWords=${encodeURIComponent(searchWordsJSON)}&categories=${encodeURIComponent(categoriesIdsArrJSON)}&priceRange=${encodeURIComponent(priceRangeArrJSON)}&brand=${encodeURIComponent(options.brand)}`, { 
             method: "GET",        
             headers: {
                 "Authorization": `Bearer ${localStorage.getItem("webtoken")}`,

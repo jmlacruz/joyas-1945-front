@@ -22,8 +22,8 @@ function Home() {
     const firstTime = useRef(true);
     const firstTimeShownFilters = useRef(true);
     const firstRenderForSpinner = useRef(true);
-    const thisLocation = useLocation();
     const navigate = useNavigate();
+    const location = useLocation();
     const quantityOfPages = useRef(0);
     const [brands, setBrands] = useState <JSX.Element[]> ([]);
     const [bgBrandImageSrc, setBgBrandImageSrc] = useState("");
@@ -39,7 +39,7 @@ function Home() {
     const categoriesArrStr = query.get("categories") as string;
     const priceRangeArrStr = query.get("priceRange") as string;
     const orderBy = query.get("orderBy") as FilterOrderByTypes | "" || "";
-    const brandId = query.get("brand") as string || "";
+    const brandIdFromQuery = query.get("brand");
     const resultsByPage = 60;                   //<------- Si se cambia este valor también hay que cambiarlo en el dashboard en "ProductsOrder.page.tsx"
     const panosTables = useRef <{
         pano: Pano[] | null,
@@ -49,13 +49,75 @@ function Home() {
         panoxproducto: null
     });
      
-    const searchWordsArrInOBJ: string[] = isValidJSON(searchWordsStr) ? JSON.parse(searchWordsStr) : [];
-    const searchWordsArrInJSON = JSON.stringify(searchWordsArrInOBJ);
-    const categoriesArrInOBJ = isValidJSON(categoriesArrStr) ? JSON.parse(categoriesArrStr) : [];
-    const categoriesArrInJSON = JSON.stringify(categoriesArrInOBJ);
-    const priceRangeArrOBJ: number[] = isValidJSON(priceRangeArrStr) ? JSON.parse(priceRangeArrStr) : [];
-    const priceRangeArrJSON = JSON.stringify(priceRangeArrOBJ);
-    const [priceRange, setPriceRange] = useState <[number, number] | ["", ""] | null> (null);
+    // Helper function to normalize brandId from query params
+    const getBrandIdFromQuery = (brandIdParam: string | null, defaultBrandId: string): string => {
+        // Handle null, empty string, or whitespace-only strings
+        if (!brandIdParam || brandIdParam.trim() === "") {
+            return defaultBrandId;
+        }
+        return brandIdParam.trim();
+    };
+
+    // Helper function to get current brandId for navigate calls
+    const getCurrentBrandId = (): string => {
+        return brandIdRef.current || brandIdFromQuery || "";
+    };
+
+    // Parse categories from URL for syncing with selectedCategories state
+    const categoriesArrParsed = isValidJSON(categoriesArrStr) ? JSON.parse(categoriesArrStr) : [];
+    const categoriesArrInOBJ: number[] = Array.isArray(categoriesArrParsed) 
+        ? categoriesArrParsed
+            .map((cat: any) => {
+                const num = typeof cat === "string" ? parseInt(cat, 10) : typeof cat === "number" ? cat : null;
+                return !isNaN(num as number) ? num : null;
+            })
+            .filter((cat: any): cat is number => cat !== null)
+        : [];
+    // Centralized filter state - initialized from URL params
+    const [filterState, setFilterState] = useState<{
+        searchWords: string[];
+        categories: number[];
+        priceRange: [number, number] | null;
+        orderBy: FilterOrderByTypes;
+    }>(() => {
+        // Initialize from URL params
+        const searchWordsFromURL: string[] = isValidJSON(searchWordsStr) ? JSON.parse(searchWordsStr) : [];
+        const categoriesFromURL: number[] = isValidJSON(categoriesArrStr) 
+            ? JSON.parse(categoriesArrStr)
+                .map((cat: any) => {
+                    const num = typeof cat === "string" ? parseInt(cat, 10) : typeof cat === "number" ? cat : null;
+                    return !isNaN(num as number) ? num : null;
+                })
+                .filter((cat: any): cat is number => cat !== null)
+            : [];
+        const priceRangeFromURL: [number, number] | null = isValidJSON(priceRangeArrStr) && Array.isArray(JSON.parse(priceRangeArrStr)) && JSON.parse(priceRangeArrStr).length === 2
+            ? (() => {
+                const parsed = JSON.parse(priceRangeArrStr);
+                const min = typeof parsed[0] === "string" ? parseFloat(parsed[0]) : parsed[0];
+                const max = typeof parsed[1] === "string" ? parseFloat(parsed[1]) : parsed[1];
+                if (!isNaN(min) && !isNaN(max) && min >= 0 && max >= 0) {
+                    return [min, max] as [number, number];
+                }
+                return null;
+            })()
+            : null;
+        
+        return {
+            searchWords: searchWordsFromURL,
+            categories: categoriesFromURL,
+            priceRange: priceRangeFromURL,
+            orderBy: (orderBy || "default") as FilterOrderByTypes
+        };
+    });
+    
+    // Refs for price inputs (controlled via refs to avoid breaking existing DOM structure)
+    const priceMinRef = useRef<HTMLInputElement>(null);
+    const priceMaxRef = useRef<HTMLInputElement>(null);
+    
+    // State for categories checkboxes
+    const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+    
+    // Legacy state for backward compatibility (synced with filterState for UI display)
     const [searchWords, setSearchWords] = useState <string[]> ([]);
     const globalMultiplierRef = useRef (0);
  
@@ -67,6 +129,9 @@ function Home() {
     const scrollPositionRef = useRef<number>(0);
     const [modalProductID, setModalProductID] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isFilterLoading, setIsFilterLoading] = useState(false);
+    const brandIdRef = useRef<string>("");
+    const [brandIdInitialized, setBrandIdInitialized] = useState(false);
 
     const { streamChat } = useContext(StreamChatContext);
     const { email, city, name, lastName, dolar } = useSelector((state: RootState) => state.user.value);
@@ -82,6 +147,203 @@ function Home() {
     const closeModal = () => {
         setIsModalOpen(false);
         setModalProductID(null);
+    };
+    
+    /************************* Centralized function to fetch products with filters ***************************/
+    
+    const fetchProductsWithFilters = async (
+        filters: {
+            searchWords: string[];
+            categories: number[];
+            priceRange: [number, number] | null;
+            orderBy: FilterOrderByTypes;
+        },
+        page: number,
+        brandId: string
+    ) => {
+        setIsFilterLoading(true);
+        
+        // Limpiar estado al iniciar nueva búsqueda
+        setProductsFound(0);
+        setProducts([]);
+        setPagesIndex([]);
+        
+        try {
+            const firstProduct = (page - 1) * resultsByPage;
+            const globalMultiplier = globalMultiplierRef.current;
+            
+            // Calculate price range with multiplier if needed
+            const priceRangeForQuery = filters.priceRange && filters.priceRange.length === 2
+                ? (dolar 
+                    ? [filters.priceRange[0] * globalMultiplier, filters.priceRange[1] * globalMultiplier]
+                    : [filters.priceRange[0], filters.priceRange[1]])
+                : [];
+            
+            // Get products count
+            const response1 = await getProductsFilteredRowsQuantity({
+                condition: {
+                    field: "estado",
+                    operator: "=",
+                    value: "1"
+                },
+                searchWordsArr: filters.searchWords,
+                categoriesIdsArr: filters.categories,
+                priceRangeArr: priceRangeForQuery,
+                brand: brandId,
+            });
+            
+            if (!response1.success || response1.data === null || response1.data === undefined) {
+                console.log(response1.message || "Error al obtener la cantidad de productos");
+                setProductsFound(0);
+                setPagesIndex([]);
+                setProducts([<p key={0} className="noResultsText">Error al cargar productos</p>]);
+                showElement(true);
+                showSpinner(false);
+                setIsFilterLoading(false);
+                return;
+            }
+            
+            const productsFound = typeof response1.data === "number" ? response1.data : 0;
+            quantityOfPages.current = Math.ceil(productsFound / resultsByPage);
+            
+            // Validate pages
+            if (isNaN(quantityOfPages.current) || quantityOfPages.current < 0) {
+                quantityOfPages.current = 0;
+            }
+            
+            if (quantityOfPages.current > 0 && page > quantityOfPages.current) {
+                showSpinner(false);
+                setIsFilterLoading(false);
+                // Reset to page 1 if current page is invalid
+                navigate(`/home?page=1&brand=${brandId}`);
+                return;
+            }
+            
+            // Calculate pagination
+            const pagesIndexArr = [];
+            for (let i = 1; i <= quantityOfPages.current; i++) pagesIndexArr.push(i);
+            
+            let maxPageArrIndex = page + 2;
+            let minPageArrIndex = page - 3;
+            if (pagesIndexArr.length <= 5) {
+                minPageArrIndex = 0;
+                maxPageArrIndex = pagesIndexArr.length;
+            } else {
+                if (maxPageArrIndex > pagesIndexArr.length) {
+                    const excededMaxLegth = maxPageArrIndex - pagesIndexArr.length;
+                    minPageArrIndex -= excededMaxLegth;
+                } else if (minPageArrIndex < 0) {
+                    const excededMinLegth = Math.abs(minPageArrIndex);
+                    maxPageArrIndex += excededMinLegth;
+                }
+            }
+            if (maxPageArrIndex > pagesIndexArr.length) maxPageArrIndex = pagesIndexArr.length;
+            if (minPageArrIndex < 0) minPageArrIndex = 0;
+            
+            const pagesIndexArrSegmented = pagesIndexArr.slice(minPageArrIndex, maxPageArrIndex);
+            const pagesIndexJSX = pagesIndexArrSegmented.map((numberOfPage, index) => 
+                <div
+                    onClick={() => {
+                        navigate(`/home?page=${numberOfPage}&brand=${brandId}`);
+                    }}
+                    key={index}
+                    className="homeNumberOfPage homePaginationButton opcionHoverPinkTransition flex">
+                    {numberOfPage}
+                </div>
+            );
+            
+            // Get products
+            const response2 = await getProductsFiltered({
+                limit: resultsByPage,
+                offset: firstProduct,
+                fields: ["nombre", "precio", "codigo", "foto1", "foto2", "id"],
+                condition: {
+                    field: "estado",
+                    operator: "=",
+                    value: "1"
+                },
+                searchWordsArr: filters.searchWords,
+                categoriesIdsArr: filters.categories,
+                priceRangeArr: priceRangeForQuery,
+                orderBy: filters.orderBy || "default",
+                brand: brandId,
+            });
+            
+            // Get pano data
+            const getPano = (productId: number) => {
+                if (panosTables.current.pano && panosTables.current.panoxproducto) {
+                    const idPano = panosTables.current.panoxproducto.find((panoxproducto: Panoxproducto) => panoxproducto.id_producto === productId)?.id_pano;
+                    if (!idPano) return "";
+                    const panoName = panosTables.current.pano.find((pano: Pano) => pano.id === idPano)?.nombre;
+                    if (!panoName) return "";
+                    return panoName;
+                } else {
+                    return "";
+                }
+            };
+            
+            // Render products
+            // Validar que response2.data existe y es un array antes de acceder a .length
+            const isValidDataArray = Array.isArray(response2.data) && response2.data.length > 0;
+            const hasValidCount = response1.success && typeof response1.data === "number";
+            
+            if (response2.success && isValidDataArray && hasValidCount) {
+                const productsJSX = response2.data.map((data: Producto, index: number) =>
+                    <ProductCard
+                        description={data.nombre}
+                        code={data.codigo}
+                        price={data.precioDolar && data.precio ? (dolar ? (formatDecimalPrice(data.precioDolar)) : Math.ceil(data.precio).toString()) : ""}
+                        key={index}
+                        imgSrc1={data.thumbnail1}
+                        imgSrc2={data.thumbnail2}
+                        productID={data.id}
+                        onClickFunction={showProductDetails}
+                        pano={getPano(data.id)}
+                        dolar={dolar}
+                    />
+                );
+                setProductsFound(productsFound);
+                setPagesIndex(pagesIndexJSX);
+                setProducts(productsJSX);
+                showSpinner(false);
+                setIsFilterLoading(false);
+            } else if (response2.success && Array.isArray(response2.data) && response2.data.length === 0) {
+                // Sin resultados pero respuesta exitosa
+                setProductsFound(productsFound);
+                setPagesIndex(pagesIndexJSX);
+                setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
+                showSpinner(false);
+                setIsFilterLoading(false);
+            } else {
+                // Manejo de errores
+                setProductsFound(0);
+                setPagesIndex([]);
+                setProducts([<p key={0} className="noResultsText">Error al cargar productos</p>]);
+                if (!response1.success) {
+                    console.log("Error en response1 (getProductsFilteredRowsQuantity):", response1.message);
+                }
+                if (!response2.success) {
+                    console.log("Error en response2 (getProductsFiltered):", response2.message);
+                }
+                if (response2.success && !Array.isArray(response2.data)) {
+                    console.log("Error: response2.data no es un array. Tipo:", typeof response2.data, "Valor:", response2.data);
+                }
+                if (response2.success && Array.isArray(response2.data) && response2.data.length > 0 && !hasValidCount) {
+                    console.log("Error: response1.data no es válido. Tipo:", typeof response1.data, "Valor:", response1.data);
+                }
+                showElement(true);
+                showSpinner(false);
+                setIsFilterLoading(false);
+            }
+        } catch (error) {
+            console.error("Error fetching products:", error);
+            setProductsFound(0);
+            setPagesIndex([]);
+            setProducts([<p key={0} className="noResultsText">Error al cargar productos</p>]);
+            showElement(true);
+            showSpinner(false);
+            setIsFilterLoading(false);
+        }
     };
     
     // Funciones para manejar la persistencia del estado
@@ -183,6 +445,13 @@ function Home() {
         };
     }, []);
     
+    // Initialize selectedCategories from filterState
+    useEffect(() => {
+        if (filterState.categories.length > 0 && selectedCategories.length === 0) {
+            setSelectedCategories(filterState.categories);
+        }
+    }, [filterState.categories]);
+    
     /********************************************** Abrimos los filtros si se dejaron abiertos *******************************************/
 
     useEffect(() => {                                                                                               //Si abrimos el filtro esperamos a que se renderizen las categorias para que el filtro tenga su scrollHeightFinal
@@ -200,27 +469,26 @@ function Home() {
 
     useEffect(() => {
         (async () => {
-
-            if (                                                                                                        //Al cargar la página sin querys no las actualizamos en el localstorage
-                !searchWordsArrInOBJ.length
+            if (
+                !filterState.searchWords.length
                 &&
-                !categoriesArrInOBJ.length
+                !filterState.categories.length
                 &&
-                !priceRangeArrOBJ.length
+                !filterState.priceRange
                 &&
-                !orderBy
+                filterState.orderBy === "default"
                 &&
-                !brandId
+                !brandIdRef.current
                 &&
                 (!pageNumberFromQuery || pageNumberFromQuery === 1)
             ) return;
 
-            const querysData: QuerysData = {                                                                                       //Al cambiar las querys las guardamos en el localstorage
-                searchWords: searchWordsArrInOBJ,
-                categories: categoriesArrInOBJ,
-                priceRange: priceRangeArrOBJ,
-                orderBy,
-                brandId,
+            const querysData: QuerysData = {
+                searchWords: filterState.searchWords,
+                categories: filterState.categories.map(cat => cat.toString()),
+                priceRange: filterState.priceRange || [],
+                orderBy: filterState.orderBy,
+                brandId: brandIdRef.current,
                 pageNumberFromQuery
             };
 
@@ -247,44 +515,15 @@ function Home() {
                 });
             }
         })();
-    }, [thisLocation]);
+    }, [filterState, pageNumberFromQuery, brandIdRef.current]);
      
     /*************************************************************************************************************************************/
     
+    // Initialization useEffect - runs once to load brands, categories, panos, multiplier
     useEffect(() => {
-      
-        if (firstRenderForSpinner.current) {
-            showSpinner(true);
-            firstRenderForSpinner.current = false;
-        }
-
-
-        
-        const firstProduct = (pageNumberFromQuery - 1) * resultsByPage;                                                             //firstProduct: A partir de que producto se muestra la página -> si offset = firstProduct = 0 se muestra desde el primero
-       
+        setBrandIdInitialized(false); // Reset initialization state
         (async () => {
-            
-            const resetFilterInputs = () => {
-                const productTypeInputs = document.querySelectorAll(".filterCheckBox_hidden") as NodeListOf <HTMLInputElement>;
-                const productTypeInputsArr = Array.from(productTypeInputs);
-                productTypeInputsArr.forEach(input => input.checked = false);
-
-                const homePageFinderSearchInput = document.querySelector(".homePageFinderSearchInput") as HTMLInputElement;
-                homePageFinderSearchInput.value = "";
-
-                const filterPriceInputs = document.querySelectorAll(".filterPriceInput") as NodeListOf <HTMLInputElement>;
-                const filterPriceInputsArr = Array.from(filterPriceInputs);
-                filterPriceInputsArr.forEach(input => input.value = "");
-
-                const filterByOrderOptionsCont = document.querySelector(".filterOrderOptionsDropDownCont") as HTMLDivElement;
-                const filterByOrderOptions = filterByOrderOptionsCont.childNodes as NodeListOf <HTMLParagraphElement>;
-                const filterByOrderOptionsArr = Array.from(filterByOrderOptions);
-                filterByOrderOptionsArr.forEach(option => option.classList.remove("filterOrderOptionsDropDowSelected"));
-                filterByOrderOptionsArr[0].classList.add("filterOrderOptionsDropDowSelected");
-            };
-
             /*********** Obtención del multiplicador de precios ******/
-
             const response = await getTable({tableName: "multiplicador"});
             const globalMultiplierData: Multiplicador | null = response.success && response.data && response.data.length ? response.data[0] : null;
             const globalMultiplier = globalMultiplierData?.valor || 1;
@@ -298,114 +537,85 @@ function Home() {
                 const brandImgSelectedSrc = brandImgSelected.src;
                 currencyBrandImg.src = brandImgSelectedSrc;
                 const brandId = brandImgSelected.id;
-                resetFilterInputs();
+                // Reset filters when changing brand
+                setFilterState({
+                    searchWords: [],
+                    categories: [],
+                    priceRange: null,
+                    orderBy: "default"
+                });
+                setSelectedCategories([]);
                 saveScrollPosition();
                 saveInputsState();
-                navigate(`/home?page=1&brand=${brandId}`);                                                                  //Al cambiar de marca resetamos todos los filtros
+                navigate(`/home?page=1&brand=${brandId}`);
             };
 
-            const response0 = await getTable({tableName: "marca"});                                                         //Obtenemos marcas
-            if (!response0.success) return;
-            const activeBrands: Marca[] = response0.data.filter((brand: any) => brand.estado === "1");                      //Las marcas activas en la solapa de home tienen el campo "estado" = "1" en tabla "marca"
-            activeBrands.sort((a: any, b: any) => a.orden - b.orden);                                                       //Ordenamos las marcas del select por el campo "orden" para ordenarlas en el select
-            activeBrandsRef.current = activeBrands;    
+            const response0 = await getTable({tableName: "marca"});
+            if (!response0.success) {
+                showElement(true);
+                showSpinner(false);
+                setIsFilterLoading(false);
+                return;
+            }
+            const activeBrands: Marca[] = response0.data.filter((brand: any) => brand.estado === "1");
+            activeBrands.sort((a: any, b: any) => a.orden - b.orden);
+            activeBrandsRef.current = activeBrands;
             
-            const brandSelected = activeBrands.find((brand: any) => brand.id === parseInt(brandId));
+            // Normalize brandId using helper function with default to brand id=135, or first brand as fallback
+            const brand135 = activeBrands.find((brand: Marca) => brand.id === 135);
+            const defaultBrandId = brand135 
+                ? brand135.id.toString() 
+                : (activeBrands.length > 0 ? activeBrands[0].id.toString() : "");
+            const brandId = getBrandIdFromQuery(brandIdFromQuery, defaultBrandId);
+            brandIdRef.current = brandId;
+            setBrandIdInitialized(true);
+            
+            const brandSelected = activeBrands.find((brand: any) => brand.id.toString() === brandId);
             if (brandSelected) {
                 setCurrentBrandImageSrc(brandSelected.logo);
                 setBgBrandImageSrc(brandSelected.imagen);
             } else {
-                setCurrentBrandImageSrc(activeBrands[0].logo);    //Cambiamos la imagen de la marca en el select, por defecto la imagen es la de la primera en la lista. Si hay una id de marca en la query elegimos su imagen corresponiente          
+                setCurrentBrandImageSrc(activeBrands[0].logo);
                 setBgBrandImageSrc(activeBrands[0].imagen);
             }
                                                                                                                             
             const brandsJSX = activeBrands.map((brand: any, index: number) => 
-                <img src={brand.logo} alt={brand.descripcion} id={brand.id} className="brandLogoImg" key={index} onClick={handleSelectBrand}/>          // brand.id es el codigo de la marca que también tienen los productos
+                <img src={brand.logo} alt={brand.descripcion} id={brand.id} className="brandLogoImg" key={index} onClick={handleSelectBrand}/>
             );                                      
             brandsJSX.length ? setBrands(brandsJSX) : setBrands([]);
-
-            /************************** Obtenemos la cantidad de filas que devuelve la busqueda actual ******************************/
-
-            const response1 = await getProductsFilteredRowsQuantity({                                                          
-                condition: {
-                    field: "estado", 
-                    operator: "=", 
-                    value: "1"
-                }, 
-                searchWordsArr: searchWordsArrInOBJ, 
-                categoriesIdsArr: categoriesArrInOBJ,
-                priceRangeArr: priceRangeArrOBJ.length ? (dolar ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
-                brand: brandId || activeBrands[0].id.toString(),
-            });               
-            const productsFound = response1.data;
-            quantityOfPages.current = Math.ceil(productsFound / resultsByPage);
-
-            /******************************************** Seteo de paginación ***********************************/
-
-            if (quantityOfPages.current > 0 && pageNumberFromQuery > quantityOfPages.current) return (navigate("/home?page=1"));
-
-            const pagesIndexArr = [];
-            for (let i = 1; i <= quantityOfPages.current; i++) pagesIndexArr.push(i);                                         //Generamos array con todas las paginas
-            
-            let maxPageArrIndex = pageNumberFromQuery + 2;                                                                    //Lógica para calcular los números de páginas que se muestran   
-            let minPageArrIndex = pageNumberFromQuery - 3;                                                                    //  en la barra de paginación
-            if (pagesIndexArr.length <= 5) {
-                minPageArrIndex = 0;
-                maxPageArrIndex = pagesIndexArr.length;
-            } else {
-                if (maxPageArrIndex > pagesIndexArr.length) {
-                    const excededMaxLegth = maxPageArrIndex - pagesIndexArr.length;
-                    minPageArrIndex -= excededMaxLegth;
-                } else if (minPageArrIndex < 0) {
-                    const excededMinLegth = Math.abs(minPageArrIndex);
-                    maxPageArrIndex += excededMinLegth;
-                }
-            }          
-            if (maxPageArrIndex > pagesIndexArr.length) maxPageArrIndex = pagesIndexArr.length;
-            if (minPageArrIndex < 0) minPageArrIndex = 0;
-
-            const pagesIndexArrSegmented = pagesIndexArr.slice(minPageArrIndex, maxPageArrIndex);                           //Del array con todas las paginas obtenemos la actual, las 2 anteriores y las dos posteriores
-            const pagesIndexJSX = pagesIndexArrSegmented.map((numberOfPage, index) => 
-                <div 
-                    onClick={() => navigate(`/home?page=${numberOfPage}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${brandId}`) } 
-                    key={index} 
-                    className="homeNumberOfPage homePaginationButton opcionHoverPinkTransition flex">
-                    {numberOfPage}
-                </div>
-            );
-
-            /****************************************************************************************************/
-            
-            const response2 = await getProductsFiltered({
-                limit: resultsByPage, 
-                offset: firstProduct , 
-                // fields: ["nombre", "precio", "stock", "codigo", "foto1", "foto2", "id"],                                             //Si requerimos el campo "foto1" (ruta de imagen) el backend agrega el campo "thumbnail" (ruta de thumbnail) automaticamente
-                fields: ["nombre", "precio", "codigo", "foto1", "foto2", "id"],                                             //Si requerimos el campo "foto1" (ruta de imagen) el backend agrega el campo "thumbnail" (ruta de thumbnail) automaticamente
-                condition: {
-                    field: "estado", 
-                    operator: "=", 
-                    value: "1"
-                },
-                searchWordsArr: searchWordsArrInOBJ,
-                categoriesIdsArr: categoriesArrInOBJ,
-                priceRangeArr: priceRangeArrOBJ.length ? (dolar ? [priceRangeArrOBJ[0] * globalMultiplier, priceRangeArrOBJ[1] * globalMultiplier] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
-                orderBy: orderBy || "default",
-                brand: brandId || activeBrands[0].id,
-            });          
 
             /************************** Obtenemos las categorías para listarlas en el filtro ******************************/
              
             const response3 = await getTable({tableName: "categoria"});                                                                                              
             if (response3.success) {
-                const categoriesNamesArr = response3.data.map((categorie: any, index: number) =>                        //El id de la categoria corresponde al numero de categoria de los productos
-                    <div className="filterInputCont flex" key={index}>
-                        <div className="filterCheckBox">
-                            <input type="checkbox" className="filterCheckBox_hidden filterCheckBoxOfCategorie" id={categorie.id} onClick={searchByCategorieAndPriceRange}/>     
-                            <div className="filterCheckBox_shown flex"></div>                                                        
+                const categoriesNamesArr = response3.data.map((categorie: any, index: number) => {
+                    const categoryId = parseInt(categorie.id, 10);
+                    const isChecked = selectedCategories.includes(categoryId);
+                    
+                    return (
+                        <div className="filterInputCont flex" key={index}>
+                            <div className="filterCheckBox">
+                                <input 
+                                    type="checkbox" 
+                                    className="filterCheckBox_hidden filterCheckBoxOfCategorie" 
+                                    id={categorie.id.toString()}
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                        const catId = parseInt(e.target.id, 10);
+                                        if (e.target.checked) {
+                                            setSelectedCategories(prev => [...prev, catId]);
+                                        } else {
+                                            setSelectedCategories(prev => prev.filter(id => id !== catId));
+                                        }
+                                    }}
+                                    onClick={searchByCategorieAndPriceRange}
+                                />     
+                                <div className="filterCheckBox_shown flex"></div>                                                        
+                            </div>
+                            <p className="filterCategorieName">{categorie.nombre}</p>
                         </div>
-                        <p className="filterCategorieName">{categorie.nombre}</p>
-                    </div>
-                );
+                    );
+                });
                 setCategories(categoriesNamesArr);
             } else {
                 setCategories([]);
@@ -416,7 +626,7 @@ function Home() {
             const response4 = await getTable({tableName: "pano"});
             const response5 = await getTable({tableName: "panoxproducto"});
 
-            if (response4.success && response5.success) {                                                   //Almacenamos tablas en variables de referencia
+            if (response4.success && response5.success) {
                 const panoTable: Pano[] = response4.data;
                 const panoXProductoTable: Panoxproducto[] = response5.data;
                 panosTables.current = {
@@ -429,69 +639,63 @@ function Home() {
                     panoxproducto: null
                 };
             }
-
-            const getPano = (productId: number) => {
-                if (panosTables.current.pano && panosTables.current.panoxproducto) {
-                    const idPano = panosTables.current.panoxproducto.find((panoxproducto: Panoxproducto) => panoxproducto.id_producto === productId)?.id_pano;
-                    if (!idPano) return "";
-                    const panoName = panosTables.current.pano.find((pano: Pano) => pano.id === idPano)?.nombre;
-                    if (!panoName) return "";
-                    return panoName;                        
-                } else {
-                    return "";
-                }
-            };
-
-            /************************* Renderizado de cards ***************************/
-                       
-            if (response2.success && response2.data.length && response1.success && response1.data) {
-  
-                const productsJSX = response2.data.map((data: Producto, index: number) => 
-                    <ProductCard 
-                        description={data.nombre}  
-                        code={data.codigo} 
-                        price={data.precioDolar && data.precio ? (dolar ? (formatDecimalPrice(data.precioDolar)) : Math.ceil(data.precio).toString()) : ""} 
-                        // stock={data.stock} 
-                        key={index}
-                        imgSrc1={data.thumbnail1}
-                        imgSrc2={data.thumbnail2}
-                        productID= {data.id}
-                        onClickFunction={showProductDetails}
-                        pano={getPano(data.id)}
-                        dolar={dolar}
-                    />
+        })();
+    }, [brandIdFromQuery]);
+    
+    // Execute filter when navigating to /home route or when URL params change (including page refresh)
+    useEffect(() => {
+        if (location.pathname === "/home" && brandIdRef.current && brandIdInitialized) {
+            (async () => {
+                await fetchProductsWithFilters(
+                    {
+                        searchWords: filterState.searchWords,
+                        categories: selectedCategories.length > 0 ? selectedCategories : filterState.categories,
+                        priceRange: filterState.priceRange,
+                        orderBy: filterState.orderBy
+                    },
+                    pageNumberFromQuery,
+                    brandIdRef.current
                 );
-                setProductsFound(productsFound);
-                setPagesIndex(pagesIndexJSX);
-                setProducts(productsJSX);
-            } else if (response2.success && !response2.data.length) {
-                setProductsFound(productsFound);
-                setPagesIndex(pagesIndexJSX);
-                setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
-            } else {
-                if (!response1.success) console.log(response1.message);
-                if (!response2.success) console.log(response2.message);
-                showElement(true);
-                showSpinner(false);
+            })();
+        }
+    }, [location.pathname, location.search, brandIdInitialized, filterState, selectedCategories, pageNumberFromQuery]);
+    
+    // Main useEffect for fetching products - uses filterState
+    useEffect(() => {
+        if (firstRenderForSpinner.current) {
+            showSpinner(true);
+            firstRenderForSpinner.current = false;
+        }
+
+        if (!brandIdRef.current) return; // Wait for brand to be initialized
+        
+        (async () => {
+            // Sync selectedCategories with filterState before fetching
+            if (filterState.categories.length > 0 && selectedCategories.length === 0) {
+                setSelectedCategories(filterState.categories);
             }
-
-            /********************************************************* Seteo de los inputs de rango de precio y palabras de busqueda ***************************************************/
-
-            if (searchWordsArrInOBJ.length) {
-                setSearchWords(searchWordsArrInOBJ);
+            
+            // Use the centralized fetch function
+            await fetchProductsWithFilters(
+                {
+                    searchWords: filterState.searchWords,
+                    categories: selectedCategories.length > 0 ? selectedCategories : filterState.categories,
+                    priceRange: filterState.priceRange,
+                    orderBy: filterState.orderBy
+                },
+                pageNumberFromQuery,
+                brandIdRef.current
+            );
+            
+            // Sync legacy state for backward compatibility (for UI display)
+            if (filterState.searchWords.length) {
+                setSearchWords(filterState.searchWords);
             } else {
                 setSearchWords([]);
             }
-
-            if (priceRangeArrOBJ.length) {
-                setPriceRange([priceRangeArrOBJ[0], priceRangeArrOBJ[1]]);
-            } else {
-                setPriceRange(["", ""]);
-            }
             
-            /************************* Si hay opciones de filtro guardadas en el localstorage actualizamos el filtro cambiando la url ***************************/
-
-            if (firstTime.current) {                                                        //Actualizamos el filtro solo la primera vez que se monta el componente
+            // Handle localStorage restoration on first load
+            if (firstTime.current) {
                 firstTime.current = false;
 
                 const querysData = localStorage.getItem("querysData");
@@ -500,48 +704,41 @@ function Home() {
                         const querysDataDataObj: QuerysData = JSON.parse(querysData);
                         const { searchWords: savedSearchWords, categories: savedCategories, priceRange: savedPriceRange, orderBy: savedOrderBy, brandId: savedBrandId, pageNumberFromQuery: savedPageNumber } = querysDataDataObj;
                         
-                        // Actualizar el state local directamente en lugar de navegar
                         if (savedSearchWords && savedSearchWords.length > 0) {
-                            setSearchWords(savedSearchWords);
+                            setFilterState(prev => ({
+                                ...prev,
+                                searchWords: savedSearchWords
+                            }));
                         }
                         
                         if (savedPriceRange && savedPriceRange.length === 2) {
-                            setPriceRange([savedPriceRange[0], savedPriceRange[1]]);
+                            setFilterState(prev => ({
+                                ...prev,
+                                priceRange: [savedPriceRange[0], savedPriceRange[1]]
+                            }));
                         }
                         
-                        // Solo navegar si la página es diferente o si hay cambios significativos en los filtros
-                        const currentFilters = {
-                            searchWords: searchWordsArrInOBJ,
-                            categories: categoriesArrInOBJ,
-                            priceRange: priceRangeArrOBJ,
-                            orderBy,
-                            brandId
-                        };
+                        if (savedCategories && savedCategories.length > 0) {
+                            const categoriesAsNumbers = savedCategories.map(cat => parseInt(cat, 10)).filter(cat => !isNaN(cat));
+                            setFilterState(prev => ({
+                                ...prev,
+                                categories: categoriesAsNumbers
+                            }));
+                            setSelectedCategories(categoriesAsNumbers);
+                        }
                         
-                        const savedFilters = {
-                            searchWords: savedSearchWords,
-                            categories: savedCategories,
-                            priceRange: savedPriceRange,
-                            orderBy: savedOrderBy,
-                            brandId: savedBrandId
-                        };
+                        if (savedOrderBy) {
+                            setFilterState(prev => ({
+                                ...prev,
+                                orderBy: savedOrderBy as FilterOrderByTypes
+                            }));
+                        }
                         
-                        const filtersChanged = JSON.stringify(currentFilters) !== JSON.stringify(savedFilters);
-                        const pageChanged = savedPageNumber !== pageNumberFromQuery;
-                        
-                        if (filtersChanged || pageChanged) {
-                            // Construir la nueva URL solo si es necesario
-                            const newUrl = `/home?page=${savedPageNumber}&searchWords=${JSON.stringify(savedSearchWords)}&categories=${JSON.stringify(savedCategories)}&priceRange=${JSON.stringify(savedPriceRange)}&orderBy=${savedOrderBy}&brand=${savedBrandId}`;
-                            
-                            // Usar replace en lugar de navigate para evitar entradas en el historial
-                            window.history.replaceState(null, "", newUrl);
-                            
-                            // Actualizar las variables de query para que se reflejen en el resto del componente
-                            // Esto se hará automáticamente en el siguiente render
+                        if (savedPageNumber !== pageNumberFromQuery) {
+                            navigate(`/home?page=${savedPageNumber}&brand=${savedBrandId || brandIdRef.current}`);
                         }
                     } catch (error) {
                         console.error("Error parsing querysData from localStorage:", error);
-                        // Limpiar localStorage si hay datos corruptos
                         localStorage.removeItem("querysData");
                     }
                 }
@@ -552,44 +749,29 @@ function Home() {
         /****** Lógica para poner en negrita la opción del filtro de orden seleccionada o sino elegimos ninguna se selacciona la opción por defecto *****/
 
         const filterOrderOptions = document.querySelector(".filterOrderOptionsDropDownCont")?.childNodes as NodeListOf<HTMLParagraphElement>;
-        const filterOrderOptionsArr = Array.from(filterOrderOptions);
-        filterOrderOptionsArr.forEach((option) => option.classList.remove("filterOrderOptionsDropDowSelected"));
-        if (orderBy) {
-            const index = filterOrderOptionsArr.findIndex((option) => option.role === orderBy);
-            filterOrderOptionsArr[index].classList.add("filterOrderOptionsDropDowSelected");
-        } else {
-            const orderByDefault: FilterOrderByTypes = "default";
-            const index = filterOrderOptionsArr.findIndex((option) => option.role === orderByDefault);
-            filterOrderOptionsArr[index].classList.add("filterOrderOptionsDropDowSelected");
+        if (filterOrderOptions) {
+            const filterOrderOptionsArr = Array.from(filterOrderOptions);
+            filterOrderOptionsArr.forEach((option) => option.classList.remove("filterOrderOptionsDropDowSelected"));
+            const orderByToUse = filterState.orderBy || "default";
+            const index = filterOrderOptionsArr.findIndex((option) => option.role === orderByToUse);
+            if (index !== -1) {
+                filterOrderOptionsArr[index].classList.add("filterOrderOptionsDropDowSelected");
+            }
         }
                                          
-    }, [pageNumberFromQuery, searchWordsArrInJSON, categoriesArrInJSON, priceRangeArrJSON, orderBy, brandId]);
+    }, [pageNumberFromQuery, filterState, brandIdFromQuery, selectedCategories]);
 
-    /******* Lógica para seleccionar las opciones de categoría según query en url (Una vez que se hizo el map de categorías)*******/
+    /******* Lógica para sincronizar categorías seleccionadas con el estado  *******/
 
     useEffect(() => {
-        const filtersCheckBoxsOfCategorie = document.querySelectorAll(".filterCheckBoxOfCategorie") as NodeListOf<HTMLInputElement>;
-
-        if(!categoriesArrInOBJ.length || !categories.length) {                                                  //Si no hay query de categoria resetamos todos los checkboxes
-            if (filtersCheckBoxsOfCategorie && filtersCheckBoxsOfCategorie.length) {
-                filtersCheckBoxsOfCategorie.forEach((checkBox) => checkBox.checked = false);
-            }
-            return;
+        // Sync selectedCategories with filterState when categories change
+        if (categories.length > 0 && selectedCategories.length === 0 && categoriesArrInOBJ.length > 0) {
+            setSelectedCategories(categoriesArrInOBJ);
         }
+    }, [categories, categoriesArrInOBJ]);
 
-        const filtersCheckBoxOfCategorieArr = Array.from(filtersCheckBoxsOfCategorie);
-        filtersCheckBoxOfCategorieArr.forEach((checkBox) => checkBox.checked = false);
-        const categoriesSelected = filtersCheckBoxOfCategorieArr.filter((categorieHTML) => categoriesArrInOBJ.includes(categorieHTML.id));
-        categoriesSelected.forEach((categorieHTML) => categorieHTML.checked = true);
-    }, [categories]);
-
-    const getCategories = () => {
-        const categoriesInputs = document.querySelectorAll(".filterCheckBoxOfCategorie") as NodeListOf <HTMLInputElement>;
-        const categoriesInputsArr = Array.from(categoriesInputs);
-        const categoriesInputsChecked = categoriesInputsArr.filter((input) => input.checked);
-        const categoriesIdsArr = categoriesInputsChecked.map((input) => input.id);
-        const categoriesIdsArrInJSON = categoriesIdsArr.length ? JSON.stringify(categoriesIdsArr) : JSON.stringify([]);
-        return categoriesIdsArrInJSON;
+    const getCategories = (): number[] => {
+        return selectedCategories;
     };
     
     useEffect(() => {
@@ -630,19 +812,27 @@ function Home() {
 
     /******************************* Lógica para buscar propductos con texto  **************************/
 
-    const getSearchWords = () => {                                                                                                         
-        const serachInput = document.querySelector(".homePageFinderSearchInput") as HTMLInputElement; 
-        const searchWordsArr = serachInput.value.split(" ");
-        const searchWordsArrWithoutSpaces = searchWordsArr.map((word) => word.trim());
-        const searchWordsArrWithoutEmptyStrings = searchWordsArrWithoutSpaces.filter((word) => word !== "");
-        const searchWordsArrInJSON = searchWordsArrWithoutEmptyStrings.length ? JSON.stringify(searchWordsArrWithoutEmptyStrings) : JSON.stringify([]);
-        return searchWordsArrInJSON;
+    const getSearchWords = (): string[] => {
+        return filterState.searchWords;
     };
 
     const searchWordsQuery = () => {
         saveScrollPosition();
         saveInputsState();
-        navigate(`/home?page=1&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${priceRangeArrJSON}&orderBy=${orderBy}&brand=${brandId}`);
+        
+        // Update filter state with current search words
+        const searchInput = document.querySelector(".homePageFinderSearchInput") as HTMLInputElement;
+        const searchWordsArr = searchInput?.value.split(" ") || [];
+        const searchWordsArrWithoutSpaces = searchWordsArr.map((word) => word.trim());
+        const searchWordsArrWithoutEmptyStrings = searchWordsArrWithoutSpaces.filter((word) => word !== "");
+        
+        setFilterState(prev => ({
+            ...prev,
+            searchWords: searchWordsArrWithoutEmptyStrings
+        }));
+        
+        // Reset to page 1 when searching
+        navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
     };
 
     const calculateNextPage = () => {
@@ -659,48 +849,55 @@ function Home() {
 
     /*************************** Sanitización de valores de rango de precio **************************/
 
-    const checkIfRange = () => {
-        const filterPriceInputMin = document.querySelector(".filterPriceInputMin") as HTMLInputElement;
-        const filterPriceInputMax = document.querySelector(".filterPriceInputMax") as HTMLInputElement;
-        const filterPriceMinValue = parseFloat(filterPriceInputMin.value.trim());                                             //Si los valores contienen caracteres el parseInt da NaN que es equivalente a false
-        const filterPriceMaxValue = parseFloat(filterPriceInputMax.value.trim());
+    const checkIfRange = (): [number, number] | null => {
+        const minValue = priceMinRef.current?.value.trim() || "";
+        const maxValue = priceMaxRef.current?.value.trim() || "";
+        const filterPriceMinValue = parseFloat(minValue);
+        const filterPriceMaxValue = parseFloat(maxValue);
         
         if (
-            (isNaN(filterPriceMinValue) && filterPriceInputMin.value !== "")                                                //El string vacio se toma como un cero por eso se excluye del if que retorna falso                                         
-            || filterPriceMinValue < 0 
-            || !filterPriceMaxValue 
+            (isNaN(filterPriceMinValue) && minValue !== "")
+            || filterPriceMinValue < 0
+            || !filterPriceMaxValue
+            || isNaN(filterPriceMaxValue)
             || filterPriceMaxValue < 0
-            || filterPriceInputMax < (filterPriceInputMin || 0)
+            || filterPriceMaxValue < (filterPriceMinValue || 0)
         ) {
-            return false;
+            return null;
         } else {
-            return ([(filterPriceMinValue || 0), filterPriceMaxValue]);                                                     //Si el valor mínimo no se introduce equivale a poner cero
+            return [(filterPriceMinValue || 0), filterPriceMaxValue];
         }
     };
 
-    const getPriceRange = () => {
-        return JSON.stringify(checkIfRange() || []);
+    const getPriceRange = (): [number, number] | null => {
+        return checkIfRange();
     };
     
     const searchByCategorieAndPriceRange = () => {
-        const rangeArrOBJ = checkIfRange() || [];
-        const rangeArrJSON = JSON.stringify(rangeArrOBJ);
-        const categoriesInputs = document.querySelectorAll(".filterCheckBox_hidden") as NodeListOf <HTMLInputElement>;
-        const categoriesInputsArr = Array.from(categoriesInputs);
-        const categoriesInputsChecked = categoriesInputsArr.filter((input) => input.checked);
-        const categoriesIdsArr = categoriesInputsChecked.map((input) => input.id);
-        const categoriesIdsArrInJSON = categoriesIdsArr.length ? JSON.stringify(categoriesIdsArr) : JSON.stringify([]);
-        
         saveScrollPosition();
         saveInputsState();
-        navigate(`/home?page=1&searchWords=${getSearchWords()}&categories=${categoriesIdsArrInJSON}&priceRange=${rangeArrJSON}&orderBy=${orderBy}&brand=${brandId}`);
+        
+        // Get price range from refs
+        const priceRangeValue = checkIfRange();
+        
+        // Update filter state with current selected categories and price range
+        setFilterState(prev => ({
+            ...prev,
+            categories: selectedCategories,
+            priceRange: priceRangeValue
+        }));
+        
+        // Reset to page 1 when filtering
+        navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
     };
 
     const clearPriceRangeInputs = () => {
-        const filterPriceInputMin = document.querySelector(".filterPriceInputMin") as HTMLInputElement;
-        const filterPriceInputMax = document.querySelector(".filterPriceInputMax") as HTMLInputElement;
-        filterPriceInputMin.value = "";
-        filterPriceInputMax.value = "";
+        if (priceMinRef.current) priceMinRef.current.value = "";
+        if (priceMaxRef.current) priceMaxRef.current.value = "";
+        setFilterState(prev => ({
+            ...prev,
+            priceRange: null
+        }));
     };
 
     /**************************** Apertura y cierre de la ventana de orden de productos  *******************************/
@@ -748,6 +945,13 @@ function Home() {
         localStorage.removeItem("homeScrollPosition");
         localStorage.removeItem("homeInputsState");
         clearPriceRangeInputs();
+        setFilterState({
+            searchWords: [],
+            categories: [],
+            priceRange: null,
+            orderBy: "default"
+        });
+        setSelectedCategories([]);
         navigate("/home");
     };
 
@@ -771,7 +975,15 @@ function Home() {
     const orderResultsBy = (orderByFromOptions: FilterOrderByTypes) => {
         saveScrollPosition();
         saveInputsState();
-        navigate(`/home?page=1&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${priceRangeArrJSON}&orderBy=${orderByFromOptions}&brand=${brandId}`);
+        
+        // Update filter state with new orderBy
+        setFilterState(prev => ({
+            ...prev,
+            orderBy: orderByFromOptions
+        }));
+        
+        // Reset to page 1 when changing order
+        navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
     };
 
     const closeBrandsDropDown = () => {
@@ -808,6 +1020,12 @@ function Home() {
         const searchWordsArrWithoutEmptyStrings = searchWordsArrWithoutSpaces.filter((word) => word !== "");
 
         setSearchWords(searchWordsArr);
+        
+        // Update filterState for search suggestions
+        setFilterState(prev => ({
+            ...prev,
+            searchWords: searchWordsArrWithoutEmptyStrings
+        }));
 
         if (!searchWordsArrWithoutEmptyStrings.length) {
             setSearchWordsResults([]);
@@ -824,10 +1042,10 @@ function Home() {
                 value: "1"
             },
             searchWordsArr: searchWordsArrWithoutEmptyStrings,
-            categoriesIdsArr: categoriesArrInOBJ,
-            priceRangeArr: priceRangeArrOBJ.length ? (dolar ? [priceRangeArrOBJ[0] * globalMultiplierRef.current, priceRangeArrOBJ[1] * globalMultiplierRef.current] : [priceRangeArrOBJ[0], priceRangeArrOBJ[1]]) : [],
-            orderBy: orderBy || "default",
-            brand: brandId || activeBrandsRef.current[0].id
+            categoriesIdsArr: filterState.categories,
+            priceRangeArr: filterState.priceRange ? (dolar ? [filterState.priceRange[0] * globalMultiplierRef.current, filterState.priceRange[1] * globalMultiplierRef.current] : [filterState.priceRange[0], filterState.priceRange[1]]) : [],
+            orderBy: filterState.orderBy || "default",
+            brand: getCurrentBrandId() || (activeBrandsRef.current.length > 0 ? activeBrandsRef.current[0].id.toString() : "")
         });          
 
         if (response2.data && response2.data.length) {
@@ -932,12 +1150,22 @@ function Home() {
                         <div className="filtersPriceRangeCont filtersShownInternalCont flex">
                             <p className="filterPriceRangeTitle">Rango de precio</p>
                             <div className="filterPriceInputsCont flex">
-                                <input type="number" className="filterPriceInput filterPriceInputMin" defaultValue={priceRange && priceRange.length ? priceRange[0] : ""} />
+                                <input 
+                                    type="number" 
+                                    className="filterPriceInput filterPriceInputMin" 
+                                    ref={priceMinRef}
+                                    defaultValue={filterState.priceRange ? filterState.priceRange[0] : ""} 
+                                />
                                 -
-                                <input type="number" className="filterPriceInput filterPriceInputMax" defaultValue={priceRange && priceRange.length ? priceRange[1] : ""} />
+                                <input 
+                                    type="number" 
+                                    className="filterPriceInput filterPriceInputMax" 
+                                    ref={priceMaxRef}
+                                    defaultValue={filterState.priceRange ? filterState.priceRange[1] : ""} 
+                                />
                             </div>
-                            <button className="filterButton" onClick={searchByCategorieAndPriceRange}>
-                                Filtrar
+                            <button className="filterButton" onClick={searchByCategorieAndPriceRange} disabled={isFilterLoading}>
+                                {isFilterLoading ? <span className="filterButtonLoader"></span> : "Filtrar"}
                             </button>
                         </div>
                     </div>
@@ -949,14 +1177,14 @@ function Home() {
                 <div className="homePagesIndexContainer flex">
                     <div 
                         className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                        onClick={ () => navigate(`/home?page=${calculatePreviousPage()}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${brandId}`) } 
+                        onClick={ () => navigate(`/home?page=${calculatePreviousPage()}&brand=${getCurrentBrandId()}`) } 
                     >
                         ‹ 
                     </div>
                     {pagesIndex}
                     <div 
                         className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                        onClick={ () => navigate(`/home?page=${calculateNextPage()}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${brandId}`) } 
+                        onClick={ () => navigate(`/home?page=${calculateNextPage()}&brand=${getCurrentBrandId()}`) } 
                     > 
                         › 
                     </div>
@@ -970,14 +1198,14 @@ function Home() {
                 <div className="homePagesIndexContainer flex">
                     <div 
                         className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                        onClick={ () => navigate(`/home?page=${calculatePreviousPage()}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${brandId}`)  } 
+                        onClick={ () => navigate(`/home?page=${calculatePreviousPage()}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${getCurrentBrandId()}`)  } 
                     > 
                         ‹ 
                     </div>
                     {pagesIndex}
                     <div 
                         className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                        onClick={ () => navigate(`/home?page=${calculateNextPage()}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${brandId}`) } 
+                        onClick={ () => navigate(`/home?page=${calculateNextPage()}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${getCurrentBrandId()}`) } 
                     > 
                         › 
                     </div>

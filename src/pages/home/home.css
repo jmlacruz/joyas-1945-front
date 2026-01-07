@@ -432,6 +432,31 @@
     padding: 0 1.5rem;
     margin-left: 0.5rem;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    transition: opacity 0.2s ease;
+}
+
+.filterButton:disabled {
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.filterButtonLoader {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: filterButtonSpin 0.8s linear infinite;
+}
+
+@keyframes filterButtonSpin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .filterPriceInputsCont {
