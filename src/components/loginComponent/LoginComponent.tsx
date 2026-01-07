@@ -96,7 +96,7 @@ function LoginComponent () {
                 </Link>
             </div>
             <p className="loginTitle">Entrar a tu Cuenta</p>
-            <p className="loginSubTitle">Inicia sesión y descubre todas las últimas novedades de almacén de joyas.</p>
+            <p className="loginSubTitle">Inicia sesión y descubre todas las últimas novedades de Joyas1945.</p>
             <div className="loginInputCont">
                 <div className="loginInputUserCont flex">
                     <img src="/images/icons/user.png" alt="User" className="loginUserIcon"/>

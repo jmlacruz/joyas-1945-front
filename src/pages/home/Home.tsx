@@ -1,5 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import { useSelector } from "react-redux";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
+import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "../../components/cards/product/Product";
 import ProductDetailModal from "../../components/productDetailModal/ProductDetailModal";
@@ -12,6 +14,7 @@ import { FiltersStatus, QuerysData } from "../../types";
 import { FilterOrderByTypes, Marca, Multiplicador, Pano, Panoxproducto, Producto } from "../../types/database";
 import { isValidJSON, parseFilterQuerys, showElement } from "../../utils/utils";
 
+import { setDolar } from "../../features/userSlice";
 import { formatDecimalPrice } from "../../utils/decimals";
 import "./home.css";
  
@@ -30,6 +33,7 @@ function Home() {
     const {showSpinner} = useContext(SpinnerContext);
     const [currentBrandImageSrc, setCurrentBrandImageSrc] = useState ("");
     const [products, setProducts] = useState <JSX.Element[] | null> (null);
+    const [productsData, setProductsData] = useState<Producto[] | null>(null);
     const [categories, setCategories] = useState <JSX.Element[]> ([]);
     const [productsFound, setProductsFound] = useState <number> (0);
     const [pagesIndex, setPagesIndex] = useState <JSX.Element[]> ([]); 
@@ -41,6 +45,8 @@ function Home() {
     const orderBy = query.get("orderBy") as FilterOrderByTypes | "" || "";
     const brandIdFromQuery = query.get("brand");
     const resultsByPage = 60;                   //<------- Si se cambia este valor también hay que cambiarlo en el dashboard en "ProductsOrder.page.tsx"
+    const skeletonCount = Math.min(resultsByPage, 12);
+    const productsCacheRef = useRef<Map<string, {items: Producto[]; productsFound: number}>>(new Map());
     const panosTables = useRef <{
         pano: Pano[] | null,
         panoxproducto: Panoxproducto[] | null,
@@ -48,6 +54,27 @@ function Home() {
         pano: null,
         panoxproducto: null
     });
+
+    const getPano = (productId: number) => {
+        if (panosTables.current.pano && panosTables.current.panoxproducto) {
+            const idPano = panosTables.current.panoxproducto.find((panoxproducto: Panoxproducto) => panoxproducto.id_producto === productId)?.id_pano;
+            if (!idPano) return "";
+            const panoName = panosTables.current.pano.find((pano: Pano) => pano.id === idPano)?.nombre;
+            if (!panoName) return "";
+            return panoName;
+        }
+        return "";
+    };
+
+  
+
+
+
+    const renderSkeletons = () => Array.from({length: skeletonCount}, (_, index) => (
+        <div className="productCardCont productCardSkeleton" key={`skeleton-${index}`}>
+            <Skeleton height="100%" width="100%" />
+        </div>
+    ));
      
     // Helper function to normalize brandId from query params
     const getBrandIdFromQuery = (brandIdParam: string | null, defaultBrandId: string): string => {
@@ -120,6 +147,7 @@ function Home() {
     // Legacy state for backward compatibility (synced with filterState for UI display)
     const [searchWords, setSearchWords] = useState <string[]> ([]);
     const globalMultiplierRef = useRef (0);
+    const activeRequestIdRef = useRef(0);
  
     const [searchWordsResults, setSearchWordsResults] = useState <JSX.Element[]> ([]);
     const activeBrandsRef = useRef <Marca[]> ([]);
@@ -135,6 +163,8 @@ function Home() {
 
     const { streamChat } = useContext(StreamChatContext);
     const { email, city, name, lastName, dolar } = useSelector((state: RootState) => state.user.value);
+    const dispatch = useDispatch();
+    const currencyIsUsd = dolar ?? true;
         
     let pageNumberFromQuery = pageString ? parseInt(pageString) : 1;                                                //Si pageString es un "string" parseInt da NaN, entonces pageNumberFromQuery = NaN (que equivale a false)
     if (!pageNumberFromQuery || pageNumberFromQuery < 1 || pageNumberFromQuery%1 !== 0) pageNumberFromQuery = 1;
@@ -193,7 +223,7 @@ function Home() {
             });
             
             if (!response1.success || response1.data === null || response1.data === undefined) {
-                console.log(response1.message || "Error al obtener la cantidad de productos");
+                setProductsData([]);
                 setProductsFound(0);
                 setPagesIndex([]);
                 setProducts([<p key={0} className="noResultsText">Error al cargar productos</p>]);
@@ -288,27 +318,15 @@ function Home() {
             const hasValidCount = response1.success && typeof response1.data === "number";
             
             if (response2.success && isValidDataArray && hasValidCount) {
-                const productsJSX = response2.data.map((data: Producto, index: number) =>
-                    <ProductCard
-                        description={data.nombre}
-                        code={data.codigo}
-                        price={data.precioDolar && data.precio ? (dolar ? (formatDecimalPrice(data.precioDolar)) : Math.ceil(data.precio).toString()) : ""}
-                        key={index}
-                        imgSrc1={data.thumbnail1}
-                        imgSrc2={data.thumbnail2}
-                        productID={data.id}
-                        onClickFunction={showProductDetails}
-                        pano={getPano(data.id)}
-                        dolar={dolar}
-                    />
-                );
+                // Store raw product data so products can be regenerated when currency changes
+                setProductsData(response2.data);
                 setProductsFound(productsFound);
                 setPagesIndex(pagesIndexJSX);
-                setProducts(productsJSX);
                 showSpinner(false);
                 setIsFilterLoading(false);
             } else if (response2.success && Array.isArray(response2.data) && response2.data.length === 0) {
                 // Sin resultados pero respuesta exitosa
+                setProductsData([]);
                 setProductsFound(productsFound);
                 setPagesIndex(pagesIndexJSX);
                 setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
@@ -316,6 +334,7 @@ function Home() {
                 setIsFilterLoading(false);
             } else {
                 // Manejo de errores
+                setProductsData([]);
                 setProductsFound(0);
                 setPagesIndex([]);
                 setProducts([<p key={0} className="noResultsText">Error al cargar productos</p>]);
@@ -336,7 +355,7 @@ function Home() {
                 setIsFilterLoading(false);
             }
         } catch (error) {
-            console.error("Error fetching products:", error);
+            setProductsData([]);
             setProductsFound(0);
             setPagesIndex([]);
             setProducts([<p key={0} className="noResultsText">Error al cargar productos</p>]);
@@ -775,6 +794,35 @@ function Home() {
     };
     
     useEffect(() => {
+        if (!productsData || !productsData.length) return;
+        const mult = globalMultiplierRef.current || 0;
+        const productsJSX = productsData.map((data: Producto, index: number) => {
+            const ars = data.precio;
+            const usd = data.precioDolar ?? (mult ? ars / mult : undefined);
+            let priceARS = ars ?? ((data.precioDolar && mult) ? data.precioDolar * mult : undefined);
+            if (priceARS !== undefined && priceARS < 1000 && usd !== undefined && mult > 50) {
+                priceARS = usd * mult;
+            }
+            return (
+                <ProductCard 
+                    description={data.nombre}  
+                    code={data.codigo} 
+                    priceUSD={usd} 
+                    priceARS={priceARS} 
+                    key={index}
+                    imgSrc1={data.thumbnail1}
+                    imgSrc2={data.thumbnail2}
+                    productID= {data.id}
+                    onClickFunction={showProductDetails}
+                    pano={getPano(data.id)}
+                    dolar={currencyIsUsd}
+                />
+            );
+        });
+        setProducts(productsJSX);
+    }, [productsData, currencyIsUsd]);
+    
+    useEffect(() => {
         
         // Mostrar inmediatamente todos los componentes que no son productos
         showElement(true);
@@ -833,6 +881,11 @@ function Home() {
         
         // Reset to page 1 when searching
         navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
+    };
+
+    const handleCurrencyToggle = (isUsdSelected: boolean) => {
+        if (isUsdSelected === currencyIsUsd) return;
+        dispatch(setDolar(isUsdSelected));
     };
 
     const calculateNextPage = () => {
@@ -1133,7 +1186,7 @@ function Home() {
                                 <p onClick={() => orderResultsBy("date")} role="date">Fecha de Subida</p>
                             </div>
                         </div>
-                        <p className="homePageOrderTextFindedQuantity">Se encontraron <span className="homePageOrderTextFindedQuantityBold">{productsFound} Productos</span> en <span className="homePageOrderTextFindedQuantityBold">Almacén de Joyas</span></p>
+                        <p className="homePageOrderTextFindedQuantity">Se encontraron <span className="homePageOrderTextFindedQuantityBold">{productsFound} Productos</span> en <span className="homePageOrderTextFindedQuantityBold">Joyas1945</span></p>
                     </div>
                 </div>
             </div>
@@ -1141,6 +1194,25 @@ function Home() {
             <div className="filtersShownCont">                                                                 {/* Ventana de tipo de productos y filtrado por rango de precios */}
                 <div className="filtersShownIntCont">
                     <div className="filtersShownInt2Cont flex wrap">
+                        <div className="filtersCurrencyToggleCont filtersShownInternalCont flex">
+                            <span className="visuallyHidden" aria-hidden="true">Moneda</span>
+                            <div className="homePageCurrencyToggleCont flex" role="group" aria-label="Seleccionar moneda">
+                                <button
+                                    className={`currencyToggleOption ${currencyIsUsd ? "active" : ""}`}
+                                    aria-pressed={currencyIsUsd}
+                                    onClick={() => handleCurrencyToggle(true)}
+                                >
+                                    USD
+                                </button>
+                                <button
+                                    className={`currencyToggleOption ${!currencyIsUsd ? "active" : ""}`}
+                                    aria-pressed={!currencyIsUsd}
+                                    onClick={() => handleCurrencyToggle(false)}
+                                >
+                                    ARS
+                                </button>
+                            </div>
+                        </div>
                         <div className="filtersShownTypesCont filtersShownInternalCont flex">
                             <p className="filtersShownTitle">Tipo</p>
                             <div className="filtersShownTypes flex">
@@ -1148,7 +1220,7 @@ function Home() {
                             </div>
                         </div>
                         <div className="filtersPriceRangeCont filtersShownInternalCont flex">
-                            <p className="filterPriceRangeTitle">Rango de precio</p>
+                            <p className="filterPriceRangeTitle">RANGO DE<br />PRECIO</p>
                             <div className="filterPriceInputsCont flex">
                                 <input 
                                     type="number" 
@@ -1191,7 +1263,7 @@ function Home() {
                 </div>
             }
             <div className="homeProductsContainer flex wrap">
-                {products}
+                {isFilterLoading || products === null ? renderSkeletons() : products}
             </div>
             {
                 productsFound !== 0 &&

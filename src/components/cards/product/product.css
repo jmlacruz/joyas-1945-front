@@ -14,6 +14,27 @@
     --card-code-height: 10%;
     --card-imgsCont-height: 70%;
     --card-price_cloth_stock-height: 20%;
+    border: 1px solid transparent;
+    transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+    z-index: 0;
+}
+
+.productCardSkeleton {
+    pointer-events: none;
+}
+
+.productCardSkeleton .react-loading-skeleton {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.productCardCont:hover,
+.productCardCont:focus-within {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    border-color: rgba(0, 0, 0, 0.08);
+    z-index: 2;
 }
 
 .productCardCode {
@@ -171,6 +192,20 @@
 .productCard_imgsIndexActive {
     background-color: var(--color-web-1);
     transform: scale(1.5);
+}
+
+/************************ accessibility **************************/
+@media (prefers-reduced-motion: reduce) {
+    .productCardCont {
+        transition: border-color 150ms ease;
+    }
+
+    .productCardCont:hover,
+    .productCardCont:focus-within {
+        transform: none;
+        box-shadow: none;
+        border-color: rgba(0, 0, 0, 0.08);
+    }
 }
 
 /************************ responseive 2º sprint **************************/
