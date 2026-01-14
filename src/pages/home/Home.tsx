@@ -11,7 +11,7 @@ import { getProductsFiltered, getProductsFilteredRowsQuantity, getTable } from "
 import { sendActivityToChat } from "../../services/streamChat";
 import { RootState } from "../../store";
 import { FiltersStatus, QuerysData } from "../../types";
-import { FilterOrderByTypes, Marca, Multiplicador, Pano, Panoxproducto, Producto } from "../../types/database";
+import { Categoria, FilterOrderByTypes, Marca, Multiplicador, Pano, Panoxproducto, Producto } from "../../types/database";
 import { isValidJSON, parseFilterQuerys, showElement } from "../../utils/utils";
 
 import { setDolar } from "../../features/userSlice";
@@ -35,6 +35,8 @@ function Home() {
     const [products, setProducts] = useState <JSX.Element[] | null> (null);
     const [productsData, setProductsData] = useState<Producto[] | null>(null);
     const [categories, setCategories] = useState <JSX.Element[]> ([]);
+    const categoriesDataRef = useRef<Categoria[]>([]);
+    const [categoriesLoaded, setCategoriesLoaded] = useState(false);
     const [productsFound, setProductsFound] = useState <number> (0);
     const [pagesIndex, setPagesIndex] = useState <JSX.Element[]> ([]); 
     const query = useQuery();                                                                                        //Hook para leer querys de url
@@ -607,6 +609,8 @@ function Home() {
              
             const response3 = await getTable({tableName: "categoria"});                                                                                              
             if (response3.success) {
+                categoriesDataRef.current = response3.data;
+                setCategoriesLoaded(true);
                 const categoriesNamesArr = response3.data.map((categorie: any, index: number) => {
                     const categoryId = parseInt(categorie.id, 10);
                     const isChecked = selectedCategories.includes(categoryId);
@@ -637,6 +641,8 @@ function Home() {
                 });
                 setCategories(categoriesNamesArr);
             } else {
+                categoriesDataRef.current = [];
+                setCategoriesLoaded(false);
                 setCategories([]);
             }
 
@@ -660,6 +666,42 @@ function Home() {
             }
         })();
     }, [brandIdFromQuery]);
+
+    // Apply footer quick filter once when coming from footer navigation
+    useEffect(() => {
+        const footerCategoryName = (location.state as { footerCategoryName?: string } | null)?.footerCategoryName;
+        if (location.pathname !== "/home") return;
+        if (!footerCategoryName || !categoriesLoaded) return;
+
+        const clearFooterState = () => {
+            navigate(location.pathname + location.search, { replace: true, state: {} });
+        };
+
+        const normalizedName = footerCategoryName.trim().toLowerCase();
+        const matchedCategory = categoriesDataRef.current.find(
+            (cat) => (cat.nombre || "").trim().toLowerCase() === normalizedName
+        );
+
+        if (!matchedCategory) {
+            clearFooterState();
+            return;
+        }
+
+        const rawId = matchedCategory.id as unknown;
+        const categoryId = typeof rawId === "number" ? rawId : parseInt((rawId as string), 10);
+        if (isNaN(categoryId)) {
+            clearFooterState();
+            return;
+        }
+
+        setSelectedCategories([categoryId]);
+        setFilterState((prev) => ({
+            ...prev,
+            categories: [categoryId],
+        }));
+
+        navigate(`/home?page=1&brand=${getCurrentBrandId()}`, { replace: true, state: {} });
+    }, [categoriesLoaded, location.pathname, location.search, location.state, navigate]);
     
     // Execute filter when navigating to /home route or when URL params change (including page refresh)
     useEffect(() => {

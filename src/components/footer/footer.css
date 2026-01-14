@@ -42,12 +42,21 @@
     justify-content: flex-start;
 }
 
-.footerTopSectionJewelryCont_sections p {
+.footerTopSectionJewelryCont_sections p,
+.footerTopSectionJewelryCont_sections a,
+.footerTopSectionJewelryCont_sections button {
     margin-right: 1.25rem;
     cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font: inherit;
 }
 
-.footerTopSectionJewelryCont_sections p:last-child {
+.footerTopSectionJewelryCont_sections p:last-child,
+.footerTopSectionJewelryCont_sections a:last-child,
+.footerTopSectionJewelryCont_sections button:last-child {
     margin-right: 0;
 }
 
