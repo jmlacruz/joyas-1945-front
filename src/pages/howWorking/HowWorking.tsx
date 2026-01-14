@@ -66,17 +66,6 @@ function HowWorking () {
                 <p className="faqs_index">Inicio / <span>Cómo funciona</span></p>
                 <p className="faqs_secondaryTitle">CÓMO FUNCIONA JOYAS 1945</p>
                 <h1 className="faqs_mainTitle">Cómo funciona</h1>
-
-                <iframe 
-                    width="560" 
-                    height="315" 
-                    src="https://www.youtube.com/embed/PNgPrnP39CM?si=5qJOY5vTtYLi98V3" 
-                    title="Joyas 1945" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                    referrerPolicy="no-referrer"
-                    onLoad={closeSpinner}
-                    className="howWorking_video"
-                />
             
                 <div className="faqs_seccions flex column">
                     {faqs}
