@@ -283,7 +283,7 @@ function Home() {
             const response2 = await getProductsFiltered({
                 limit: resultsByPage,
                 offset: firstProduct,
-                fields: ["nombre", "precio", "codigo", "foto1", "foto2", "id"],
+                fields: ["nombre", "precio", "codigo", "foto1", "foto2", "id", "con_descuento", "porcentaje_descuento", "precio_full"],
                 condition: {
                     field: "estado",
                     operator: "=",
@@ -800,6 +800,9 @@ function Home() {
                     onClickFunction={showProductDetails}
                     pano={getPano(data.id)}
                     dolar={currencyIsUsd}
+                    con_descuento={data.con_descuento ? 1 : 0}
+                    porcentaje_descuento={data.porcentaje_descuento}
+                    precio_full={data.precio_full}
                 />
             );
         });

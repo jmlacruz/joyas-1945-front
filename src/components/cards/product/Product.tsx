@@ -19,6 +19,9 @@ function Product (props: {
     onClickFunction: (productID: number) => void, 
     pano: string, 
     dolar: boolean
+    con_descuento: number,
+	porcentaje_descuento: number,
+	precio_full: number,
 }) {
 
     const cart = useSelector((state: RootState) => state.cart.value);
@@ -96,6 +99,14 @@ function Product (props: {
         return formatter.format(priceValue);
     }, [priceValue, isUsd]);
 
+    const formattedFullPrice = useMemo(() => {
+        if (!props.con_descuento || props.precio_full === undefined || props.precio_full === null) return "";
+        const formatter = isUsd
+            ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
+            : new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
+        return formatter.format(props.precio_full);
+    }, [props.con_descuento, props.precio_full, isUsd]);
+
     const currencyLabel = isUsd ? "USD" : "ARS";
 
     return (
@@ -147,9 +158,20 @@ function Product (props: {
             </div>
             <div className="productCard_Price_Cloth_Stock_Container flex column">
                 <div>
-                    <div className="productCardPriceCont flex">
-                        <p className="productCardPriceSign">{currencyLabel}</p>
-                        <p className="productCardPrice">{formattedPrice}</p>
+                    <div className={`productCardPriceCont flex column ${props.con_descuento ? "productCardPriceCont--withDiscount" : ""}`}>
+                        {props.con_descuento === 1 && (
+                            <div className="productCardPriceOriginalRow flex">
+                                <span className="productCardPriceOriginalLabel">Precio</span>
+                                <span className="productCardPriceOriginal">{formattedFullPrice}</span>
+                            </div>
+                        )}
+                        <div className="productCardPriceCurrentRow flex">
+                            <p className="productCardPriceSign">{currencyLabel}</p>
+                            <p className={`productCardPrice ${props.con_descuento ? "productCardPrice--discount" : ""}`}>{formattedPrice}</p>
+                            {/* {props.con_descuento === 1 && props.porcentaje_descuento > 0 && (
+                                <span className="productCardDiscountBadge">-{props.porcentaje_descuento}%</span>
+                            )} */}
+                        </div>
                     </div>
                     {
                         props.pano &&

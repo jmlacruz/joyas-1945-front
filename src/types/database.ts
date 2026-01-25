@@ -83,6 +83,9 @@ export type Producto = {
     order: number,
     id_grupo: number,
     notificado: "0" | "1",
+    con_descuento: boolean;
+	porcentaje_descuento: number;
+	precio_full: number;
 
     thumbnail1: string,                 //Campos que agrega la API para el front
     thumbnail2: string,                 
