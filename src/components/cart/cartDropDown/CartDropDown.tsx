@@ -61,18 +61,18 @@ function CartDropDown() {
        
     return (
         <div className="cartDropDrown dropDownAnimation1_in flex column">
+            <div className="cartDropDrown_header flex">
+                <p>Total:</p>
+                <p className="cartDropDrown_resume_total">{dolar ? "USD" : "$"} {total}</p>
+            </div>
             <div className="cartDropDrown_productsCont opacityOnAnimation flex column">
                 {cartProducts}
-                <div className="cartDropDrown_resumeCont flex column">
-                    <div className="cartDropDrown_resume_totalCont flex">
-                        <p>Total:</p>
-                        <p className="cartDropDrown_resume_total">${total}</p>
-                    </div>
-                    <Link to="/cart">
-                        <button className="customButton1 cartDropDrown_resume_button">Ver Carrito</button>
-                    </Link>
-                    <button className="customButton1" onClick={() => dispatch(clearCart())}>Vaciar Carrito</button>
-                </div>
+            </div>
+            <div className="cartDropDrown_footer flex">
+                <Link to="/cart">
+                    <button className="customButton1 cartDropDrown_footerButton">VER CARRITO</button>
+                </Link>
+                <button className="customButton1 cartDropDrown_footerButton" onClick={() => dispatch(clearCart())}>VACIAR CARRITO</button>
             </div>
             {
                 showSpinner &&

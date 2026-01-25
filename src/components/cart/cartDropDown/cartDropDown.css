@@ -4,18 +4,62 @@
     right: 0;
     width: 14rem;
     background-color: var(--bg-white);
-    padding: 1rem;
-    padding-bottom: 0;
-    padding-top: 0;
     box-shadow: 16px 21px 69px -33px rgba(0, 0, 0, 0.75);
     max-height: 50vh;
-    overflow-y: auto;
+    overflow: hidden;
+}
+
+/* Override utility classes - must use higher specificity */
+.cartDropDrown.flex.column {
+    display: flex;
+    flex-direction: column;
     justify-content: flex-start;
+    align-items: stretch;
+}
+
+.cartDropDrown_header {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-white);
+    border-bottom: 1px solid var(--color-borders-light-gray);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .cartDropDrown_productsCont {
+    flex: 1 1 auto;
+    min-height: 0;
     width: 100%;
-    height: 100%;
+    overflow-y: auto;
+    padding: 0 1rem;
+}
+
+/* Override .flex utility on products container - items must start at top */
+.cartDropDrown_productsCont.flex.column {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
+.cartDropDrown_footer {
+    flex: 0 0 auto;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-white);
+    border-top: 1px solid var(--color-borders-light-gray);
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cartDropDrown_footerButton {
+    font-size: 0.65rem;
+    padding: 0.4rem 0.5rem;
 }
 
 .cartDropDrown_productCont {
@@ -25,7 +69,7 @@
     padding: 0.75rem 0;
 }
 
-.cartDropDrown div:last-child {
+.cartDropDrown_productsCont .cartDropDrown_productCont:last-child {
     border-bottom: none;
 }
 
@@ -50,23 +94,9 @@
     margin-top: 0.5rem;
 }
 
-.cartDropDrown_resumeCont {
-    width: 100%;
-    padding: 1rem 0;
-}
-
-.cartDropDrown_resume_totalCont {
-    width: 100%;
-    margin-bottom: 1rem;
-}
-
 .cartDropDrown_resume_total {
     font-family: var(--font-style-black);
     margin-left: 0.25rem;
-}
-
-.cartDropDrown_resume_button {
-    margin-bottom: 0.75rem;
 }
 
 .cartDropDrown_spinnerCont {
@@ -78,24 +108,24 @@
 
 /*********************** Scroll *************************/
 
-.cartDropDrown::-webkit-scrollbar {                 /* ".cartDropDrown" es la clase del elemento que tiene el scroll */
+.cartDropDrown_productsCont::-webkit-scrollbar {
     width: 0.35rem
 }
 
-.cartDropDrown::-webkit-scrollbar-track {           /* Fondo del scroll */
+.cartDropDrown_productsCont::-webkit-scrollbar-track {
     background-color: transparent;
 }
 
-.cartDropDrown::-webkit-scrollbar-thumb {           /* Barra del scroll */
+.cartDropDrown_productsCont::-webkit-scrollbar-thumb {
     background-color: var(--color-web-1);
     border-radius: 0.175rem;
 }
 
-.cartDropDrown::-webkit-scrollbar-thumb:hover {     /* Efceto hover sobre scroll */
+.cartDropDrown_productsCont::-webkit-scrollbar-thumb:hover {
     background-color: var(--hover-green-color);
 }
 
-.cartDropDrown::-webkit-scrollbar-button,           /* Flechas de scroll */
-.cartDropDrown::-webkit-scrollbar-up {
+.cartDropDrown_productsCont::-webkit-scrollbar-button,
+.cartDropDrown_productsCont::-webkit-scrollbar-up {
     display: none;
 }
