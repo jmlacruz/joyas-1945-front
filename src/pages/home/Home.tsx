@@ -296,19 +296,6 @@ function Home() {
                 brand: brandId,
             });
             
-            // Get pano data
-            const getPano = (productId: number) => {
-                if (panosTables.current.pano && panosTables.current.panoxproducto) {
-                    const idPano = panosTables.current.panoxproducto.find((panoxproducto: Panoxproducto) => panoxproducto.id_producto === productId)?.id_pano;
-                    if (!idPano) return "";
-                    const panoName = panosTables.current.pano.find((pano: Pano) => pano.id === idPano)?.nombre;
-                    if (!panoName) return "";
-                    return panoName;
-                } else {
-                    return "";
-                }
-            };
-            
             // Render products
             // Validar que response2.data existe y es un array antes de acceder a .length
             const isValidDataArray = Array.isArray(response2.data) && response2.data.length > 0;
