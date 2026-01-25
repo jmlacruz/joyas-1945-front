@@ -1,10 +1,23 @@
-import { useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "./footer.css";
 
 function Footer() {
 
     const location = useLocation();
+    const navigate = useNavigate();
     const getColorTransitionClass = () => location.pathname.includes("landing") ? "opcionHoverBlueTransition" : "opcionHoverPinkTransition";
+    const isLanding = location.pathname.startsWith("/landing");
+
+    const resolveRoute = (path: "/faqs" | "/contact" | "/micuenta") => {
+        if (!isLanding) return path;
+        if (path === "/faqs") return "/landing/faqs";
+        if (path === "/contact") return "/landing/contact";
+        return path; // No landing route for /micuenta; keep base path
+    };
+
+    const handleCategoryClick = (name: string) => {
+        navigate("/home?page=1", { state: { footerCategoryName: name } });
+    };
     
     return (
         <div className="footerCont flex column">
@@ -15,19 +28,19 @@ function Footer() {
                 <div className="footerTopSectionJewelryCont flex column">
                     <p className="footerTopSectionJewelryCont_Title">Joyería</p>
                     <div className="footerTopSectionJewelryCont_sections flex">
-                        <p className={getColorTransitionClass()}>Anillos</p>
-                        <p className={getColorTransitionClass()}>Aros</p>
-                        <p className={getColorTransitionClass()}>Colgantes</p>
-                        <p className={getColorTransitionClass()}>Conjunto</p>
-                        <p className={getColorTransitionClass()}>Gargantillas</p>
+                        <button className={getColorTransitionClass()} type="button" onClick={() => handleCategoryClick("Anillos")}>Anillos</button>
+                        <button className={getColorTransitionClass()} type="button" onClick={() => handleCategoryClick("Aros")}>Aros</button>
+                        <button className={getColorTransitionClass()} type="button" onClick={() => handleCategoryClick("Colgantes")}>Colgantes</button>
+                        <button className={getColorTransitionClass()} type="button" onClick={() => handleCategoryClick("Conjunto")}>Conjunto</button>
+                        <button className={getColorTransitionClass()} type="button" onClick={() => handleCategoryClick("Gargantillas")}>Gargantillas</button>
                     </div>
                 </div>
                 <div className="footerTopSectionJewelryCont flex column">
                     <p className="footerTopSectionJewelryCont_Title">Sitemap</p>
                     <div className="footerTopSectionJewelryCont_sections flex">
-                        <p className={getColorTransitionClass()}>Faqs</p>
-                        <p className={getColorTransitionClass()}>Contacto</p>
-                        <p className={getColorTransitionClass()}>Mi Cuenta</p>
+                        <Link className={getColorTransitionClass()} to={resolveRoute("/faqs")}>Faqs</Link>
+                        <Link className={getColorTransitionClass()} to={resolveRoute("/contact")}>Contacto</Link>
+                        <Link className={getColorTransitionClass()} to={resolveRoute("/micuenta")}>Mi Cuenta</Link>
                     </div>
                 </div>
             </div>
