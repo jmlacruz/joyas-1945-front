@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { clearUser, setUser } from "../features/userSlice";
-import { checkCart } from "../services/cron";
 import { usersLogs } from "../services/database";
 import { clearSessionOfLocalStorage, getSessionOfLocalStorage, saveSessionDataInLocalStorage } from "../services/localStorage";
 import { isLogged, logOut } from "../services/log";
@@ -17,7 +16,7 @@ export const useSessionManager = (queryToken?: string | null) => {
     const previousRegisteredState = useRef(registered);
 
     // Función centralizada de logout mejorada
-    const performLogout = useCallback(async (shouldCheckCart = true) => {
+    const performLogout = useCallback(async () => {
         try {
             
             try {
@@ -143,7 +142,7 @@ export const useSessionManager = (queryToken?: string | null) => {
         // Crear nuevo handler solo si es necesario
         if (!rememberme && registered) {
             beforeUnloadHandler.current = async () => {
-                await performLogout(true);
+                await performLogout();
             };
             window.addEventListener("beforeunload", beforeUnloadHandler.current);
         }

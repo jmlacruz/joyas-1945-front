@@ -15,7 +15,6 @@ import { FilterOrderByTypes, Marca, Multiplicador, Pano, Panoxproducto, Producto
 import { isValidJSON, parseFilterQuerys, showElement } from "../../utils/utils";
 
 import { setDolar } from "../../features/userSlice";
-import { formatDecimalPrice } from "../../utils/decimals";
 import "./home.css";
  
 const useQuery = () => new URLSearchParams(useLocation().search);                                                   //Función para leer querys de url
@@ -46,7 +45,6 @@ function Home() {
     const brandIdFromQuery = query.get("brand");
     const resultsByPage = 60;                   //<------- Si se cambia este valor también hay que cambiarlo en el dashboard en "ProductsOrder.page.tsx"
     const skeletonCount = Math.min(resultsByPage, 12);
-    const productsCacheRef = useRef<Map<string, {items: Producto[]; productsFound: number}>>(new Map());
     const panosTables = useRef <{
         pano: Pano[] | null,
         panoxproducto: Panoxproducto[] | null,
@@ -147,7 +145,6 @@ function Home() {
     // Legacy state for backward compatibility (synced with filterState for UI display)
     const [searchWords, setSearchWords] = useState <string[]> ([]);
     const globalMultiplierRef = useRef (0);
-    const activeRequestIdRef = useRef(0);
  
     const [searchWordsResults, setSearchWordsResults] = useState <JSX.Element[]> ([]);
     const activeBrandsRef = useRef <Marca[]> ([]);

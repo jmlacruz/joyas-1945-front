@@ -16,10 +16,6 @@ function HowWorking () {
         !answerCont.style.maxHeight || answerCont.style.maxHeight === "0px" ? answerCont.style.maxHeight = answerCont.scrollHeight + "px" : answerCont.style.maxHeight = "0px";
     };
 
-    const closeSpinner = () => {
-        showSpinner(false);
-    };
-
     useEffect(() => {
 
         showSpinner(true);
