@@ -3,7 +3,6 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getProductsFiltered } from "../../../services/database";
 import { RootState } from "../../../store";
-import { formatDecimalPrice } from "../../../utils/decimals";
 import SliderCard from "../../cards/sliderCard/SliderCard";
 import "./productDetailSlider.css";
 
@@ -38,7 +37,8 @@ function ProductDetailSlider (props: {categoryId: number, brandId: number}) {
                     <SliderCard 
                         description={productData.nombre} 
                         imgSrc={productData.thumbnail1} 
-                        price={productData?.precioDolar && productData?.precio ? (dolar ? formatDecimalPrice(productData.precioDolar) : Math.ceil(productData.precio).toString()) : ""}
+                        priceUSD={productData?.precioDolar}
+                        priceARS={productData?.precio}
                         onClickFunction={() => navigate(`/productDetail/${productData.id}`)}             
                         productID={productData.id}
                         key={productData.id}

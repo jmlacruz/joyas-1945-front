@@ -4,7 +4,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "../../components/cards/product/Product";
-import ProductModal from "../../components/productModal/ProductModal";
+import ProductDetailModal from "../../components/productModal/ProductModal";
 import { SpinnerContext } from "../../context/spinnerContext";
 import { StreamChatContext } from "../../context/streamChatContext";
 import { getProductsFiltered, getProductsFilteredRowsQuantity, getTable } from "../../services/database";
@@ -1271,7 +1271,7 @@ function Home() {
                 </div>
             }
             
-            <ProductModal 
+            <ProductDetailModal 
                 productID={modalProductID}
                 isOpen={isModalOpen}
                 onClose={closeModal}

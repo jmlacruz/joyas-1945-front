@@ -1,0 +1,201 @@
+.productDetails_bgCont {
+    position: relative;
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    background-color: transparent;
+    overflow-y: auto;
+    justify-content: flex-start;
+    display: flex;
+    flex-direction: column;
+}
+
+.productDetails_cont {
+    position: relative;
+    width: 100%;
+    max-width: 50rem;
+    margin: 0 auto;
+    background-color: var(--bg-gray);
+    overflow-y: hidden;
+    padding: 2rem;
+    align-items: flex-start;
+    justify-content: flex-start;
+    overflow-x: hidden;                                                 /* Para que no sobresalga el slider */
+}
+
+.productDetails_closeIcon {
+    position: absolute;
+    height: 0.75rem;
+    aspect-ratio: 1/1;
+    top: 1rem;
+    right: 1rem;
+}
+
+.productDetails_mainCont {
+    width: 100%;
+    height: 18rem;
+}
+
+.productDetails_mainImgCont {
+    position: relative;
+    width: 45%;                     /* <-------------------- */
+    height: 100%;
+    padding: 1rem;
+    margin-right: 2rem;
+    aspect-ratio: 1/1;
+    background-color: var(--bg-white);
+}
+
+.productDetails_mainImg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: calc(100% - 1rem);
+    width: 100%;
+    object-fit: contain;
+    background-color: var(--bg-white);
+    transition-duration: 0.75s;
+    transition-timing-function: ease-out;
+    transition-property: opacity;
+}
+
+.productDetails_mainImg#img1 {
+    z-index: 100;
+}
+
+.productDetails_mainImg#img2 {
+    z-index: 50;
+}
+
+.productDetails_mainDescriptionCont {
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 55%;                 /* <-------------------- */
+    height: 100%;
+    padding-left: 1rem;
+}
+
+.productDetails_descriptionText {
+    font-size: 28px;
+    text-transform: uppercase;
+    color: #101010;
+    font-family: var(--font-style-light);
+    text-align: left;
+}
+
+.productDetails_clothText {
+    text-align: left;
+    font-size: var(--font-size-large);
+    font-family: var(--font-style-black);
+}
+
+.productDetails_clothText span {
+    font-size: inherit;
+    font-family: var(--font-style-light);
+}
+
+.productDetails_price {
+    padding: 1rem 0; 
+    font-family: var(--font-style-medium);
+    font-size: 22px;
+    border-bottom: 1px solid #ccc;
+    width: 100%;
+    text-align: left;
+}
+
+.productDetails_article {
+    padding-top: 1rem;
+    font-family: var(--font-style-bold);
+}
+
+.productDetails_quantityText {
+    padding-top: 0.5rem;
+    font-size: 11px;
+    color: var(--text-gray-color);
+}
+
+.productDetails_buttonsCont {    
+    --productDetails-buttonsCont-height: 1.75rem;
+    height: var(--productDetails-buttonsCont-height);
+    margin-top: 0.5rem;
+}
+
+.productDetails_addToCartButton {
+    height: var(--productDetails-buttonsCont-height);
+    border-radius: calc(var(--productDetails-buttonsCont-height) / 2);
+    background-color: var(--color-web-1);
+    padding: 0 2rem;
+    margin-left: 1rem;
+    transition-duration: var(--transitions-icon-text-duration);
+    transition-timing-function: ease-out;
+    transition-property: background-color;
+    cursor: pointer;
+}
+
+.productDetails_addToCartButton:hover {
+    background-color: var(--buttons-pinkToBlack-hover);
+}
+
+.productDetails_addToCartButton_Img {
+    height: 60%;
+    aspect-ratio: 1/1;
+    filter: brightness(1000%) grayscale(100%) contrast(1000%);
+}
+
+.productDetails_addToCartButton_text {
+    font-size: var(--font-size-small);
+    font-family: var(--font-style-medium);
+    color: var(--text-light-color);
+    margin-left: 0.5rem;
+}
+
+.productDetails_imagesCont {
+    height: 3.65rem;
+    margin-top: 1rem;
+}
+
+.productDetails_imageThumbnail {
+    height: 100%;
+    aspect-ratio: 1/1.4;
+    margin-right: 1.15rem;
+    object-fit: contain;
+    background-color: white;
+    cursor: pointer;
+    transition-duration: var(--transitions-icon-text-duration);
+    transition-timing-function: ease-out;
+    transition-property: box-shadow;
+}
+
+.productDetails_imageThumbnail:hover {
+    box-shadow: 0px 0px 24px -7px rgba(0,0,0,0.5);
+}
+
+.productDetails_downloadButton {
+    position: absolute;
+    height: 2rem;
+    min-width: 50%;
+    border-radius: 1rem;
+    background-color: var(--bg-white);
+    left: 0;
+    top: 100%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    z-index: 150;
+}
+
+.productDetails_downloadButton p {
+    font-size: var(--font-size-small);
+    font-family: var(--font-style-medium);
+    color: var(--text-dark-color-3);
+    user-select: none;
+}
+
+.productDetails_downloadImageButton_Img {
+    height: 0.65rem;
+    aspect-ratio: 1/1;
+    margin-right: 1rem;
+}
+
+/************************* responsive 2º sprint *************************/
+
+/* Media query removida - el modal padre decide qué componente mostrar según orientación */

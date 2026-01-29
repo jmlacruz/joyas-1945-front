@@ -1,17 +1,28 @@
 import { useDispatch, useSelector } from "react-redux";
 import "./sliderCard.css";
 import { RootState } from "../../../store";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { StreamChatContext } from "../../../context/streamChatContext";
 import { addToCart, subtractToCart } from "../../../features/cartSlice";
 import { sendActivityToChat } from "../../../services/streamChat";
 
-function SliderCard (props: {description: string, price: string, imgSrc: string, productID: number, onClickFunction: () => void, dolar: boolean}) {
+function SliderCard (props: {description: string, priceUSD?: number, priceARS?: number, imgSrc: string, productID: number, onClickFunction: () => void, dolar: boolean}) {
     const cart = useSelector((state: RootState) => state.cart.value);
     const [quantityInCart, setQuantityInCart] = useState (0);
     const dispatch = useDispatch();
     const { email, city, name, lastName } = useSelector((state: RootState) => state.user.value);
     const { streamChat } = useContext(StreamChatContext);
+    
+    const isUsd = props.dolar ?? true;
+    const priceValue = isUsd ? props.priceUSD : props.priceARS;
+    const formattedPrice = useMemo(() => {
+        if (priceValue === undefined || priceValue === null) return "";
+        const formatter = isUsd
+            ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
+            : new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" });
+        return formatter.format(priceValue);
+    }, [priceValue, isUsd]);
+    const currencyLabel = isUsd ? "USD" : "ARS";
 
     const handleAddToCart = async (add: boolean, e: React.MouseEvent) => {
         e.stopPropagation();                                                                                    //Para que no se dispare el evento de onClickFunction
@@ -53,8 +64,8 @@ function SliderCard (props: {description: string, price: string, imgSrc: string,
             </div>
             <div className="productCard_Price_Cloth_Stock_Container slider_productCard_Price_Cloth_Stock_Container flex column">
                 <div className="productCardPriceCont flex">
-                    <p className="productCardPriceSign">{props.dolar ? "USD" : "$"}</p>
-                    <p className="productCardPrice">{props.price}</p>
+                    <p className="productCardPriceSign">{currencyLabel}</p>
+                    <p className="productCardPrice">{formattedPrice}</p>
                 </div>
                 <div className="productCard_CardQuantitySelect_Cont slider_productCard_CardQuantitySelect_Cont flex">
                     <div className="productCard_CardQuantitySelect_div productCard_CardQuantitySelect_divBlack flex" onClick={(e) => handleAddToCart(false, e)}>-</div>
