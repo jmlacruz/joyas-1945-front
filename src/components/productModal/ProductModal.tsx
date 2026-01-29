@@ -7,9 +7,10 @@ interface ProductDetailModalProps {
     productID: number | null;
     isOpen: boolean;
     onClose: () => void;
+    onProductClick?: (productId: number) => void;
 }
 
-const ProductDetailModal = ({ productID, isOpen, onClose }: ProductDetailModalProps) => {
+const ProductDetailModal = ({ productID, isOpen, onClose, onProductClick }: ProductDetailModalProps) => {
     const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
     const [key, setKey] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -81,6 +82,7 @@ const ProductDetailModal = ({ productID, isOpen, onClose }: ProductDetailModalPr
                             productID={productID} 
                             onClose={onClose}
                             onLoaded={handleLoaded}
+                            onProductClick={onProductClick}
                         />
                     ) : (
                         <ProductDetails_portrait 
@@ -88,6 +90,7 @@ const ProductDetailModal = ({ productID, isOpen, onClose }: ProductDetailModalPr
                             productID={productID} 
                             onClose={onClose}
                             onLoaded={handleLoaded}
+                            onProductClick={onProductClick}
                         />
                     )}
                 </div>

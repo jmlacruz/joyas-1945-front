@@ -13,7 +13,7 @@ import { showElement } from "../../utils/utils";
 import waitAllImagesCharged from "../../utils/waitAllImagesCharged";
 import "./productDetails_portrait.css";
  
-function ProductDetails_portrait (props: {productID: number, onClose?: () => void, onLoaded?: () => void}) {
+function ProductDetails_portrait (props: {productID: number, onClose?: () => void, onLoaded?: () => void, onProductClick?: (productId: number) => void}) {
 
     const cart = useSelector((state: RootState) => state.cart.value);
     const dispatch = useDispatch();

@@ -16,7 +16,7 @@ import AddButton from "../buttons/addButton/AddButton";
 import ProductDetailSlider from "../sliders/productDetailSlider/ProductDetailSlider";
 import "./productDetails_landsCape.css";
  
-function ProductDetails_landsCape (props: {productID: number, onClose?: () => void, onLoaded?: () => void}) {
+function ProductDetails_landsCape (props: {productID: number, onClose?: () => void, onLoaded?: () => void, onProductClick?: (productId: number) => void}) {
 
     const navigate = useNavigate();
     const cart = useSelector((state: RootState) => state.cart.value);
@@ -42,7 +42,7 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
                 const productData: Producto = response.data[0];
                 setProductData(productData);
                 setImageToDownloadSrc(productData.foto1);
-                setProductDetailSlider(<ProductDetailSlider brandId={productData.marca} categoryId={productData.categoria}/>);
+                setProductDetailSlider(<ProductDetailSlider brandId={productData.marca} categoryId={productData.categoria} onProductClick={props.onProductClick}/>);
                 setPano(await getPanoByProductId(props.productID));
                 props.onLoaded?.(); // Notificar que los datos están listos
             }

@@ -1275,6 +1275,7 @@ function Home() {
                 productID={modalProductID}
                 isOpen={isModalOpen}
                 onClose={closeModal}
+                onProductClick={showProductDetails}
             />
         </div>
     );
