@@ -1,9 +1,10 @@
 import "./userPanel.css";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import CartDropDown from "../cart/cartDropDown/CartDropDown";
 import UserOptions from "../userOptions/UserOptions";
+import SidePanel from "../sidePanel/SidePanel";
 import { Link } from "react-router-dom";
 
 function UserPanel (props: {isMenuHidden: boolean}) {
@@ -13,6 +14,15 @@ function UserPanel (props: {isMenuHidden: boolean}) {
     const carTotalQuantity = cart.cartItems.reduce((acc, item) => acc + item.quantity, 0);
     const [showDropDown, setShowDropDown] = useState(false);
     const [showUserOptions, setShowUserOptions] = useState(false);
+    const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+
+    const handleSidePanelToggle = useCallback(() => {
+        setIsSidePanelOpen((prev) => !prev);
+    }, []);
+
+    const handleSidePanelClose = useCallback(() => {
+        setIsSidePanelOpen(false);
+    }, []);
 
     const handleCartDropDown = (e: React.MouseEvent) => {
         if (!cart.cartItems.length) return;
@@ -56,13 +66,49 @@ function UserPanel (props: {isMenuHidden: boolean}) {
                         {showUserOptions && <UserOptions />}
                     </div>
                 }
+                {
+                    props.isMenuHidden &&
+                    <div className="userNavbarOptions_hamburgerZone">
+                        <button 
+                            className="userNavbarOptions_hamburger" 
+                            type="button" 
+                            aria-label={isSidePanelOpen ? "Cerrar menú lateral" : "Abrir menú lateral"}
+                            aria-expanded={isSidePanelOpen}
+                            onClick={handleSidePanelToggle}
+                        >
+                            <span className="hamburger_bar"></span>
+                            <span className="hamburger_bar"></span>
+                            <span className="hamburger_bar"></span>
+                        </button>
+                    </div>
+                }
+                <SidePanel isOpen={isSidePanelOpen} onClose={handleSidePanelClose} />
             </div>
             
             :
 
-            <Link to="/registro">
-                <button className="navbarRegisterCont customButton1 flex">Registrarse</button>
-            </Link>
+            <div className="userNavbarOptions_Cont userNavbarOptions_Cont--public flex">
+                <Link to="/registro">
+                    <button className="navbarRegisterCont customButton1 flex">Registrarse</button>
+                </Link>
+                {
+                    props.isMenuHidden &&
+                    <div className="userNavbarOptions_hamburgerZone">
+                        <button 
+                            className="userNavbarOptions_hamburger" 
+                            type="button" 
+                            aria-label={isSidePanelOpen ? "Cerrar menú lateral" : "Abrir menú lateral"}
+                            aria-expanded={isSidePanelOpen}
+                            onClick={handleSidePanelToggle}
+                        >
+                            <span className="hamburger_bar"></span>
+                            <span className="hamburger_bar"></span>
+                            <span className="hamburger_bar"></span>
+                        </button>
+                    </div>
+                }
+                <SidePanel isOpen={isSidePanelOpen} onClose={handleSidePanelClose} />
+            </div>
     );
 }
 

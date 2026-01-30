@@ -1,15 +1,101 @@
 .contMenu {
     position: fixed;
-    width: 100vw;                                   /* 100vw para que al sacar el scroll del body el navbar no se mueva */
+    width: 100%;                                    /* Use 100% instead of 100vw to avoid scrollbar shift */
     height: var(--navbar-height);
     top: 0;
     left: 0;
+    right: 0;                                       /* Ensure full width without scrollbar issues */
     z-index: 1000;
     --options-padding: 0.65rem;
+    --navbar-edge-padding: 2.5rem;                  /* Symmetric edge padding for simplified navbar */
     background-color: white;
     justify-content: center;
-    padding-right: 17px;                            /* Ancho del scroll ya que el menu tiene width 100vw */
+    box-sizing: border-box;
     box-shadow: 0px 7px 28px -11px rgba(0, 0, 0, 0.075);
+}
+
+/* Simplified navbar: logo left, brand tabs center, user panel right */
+.contMenu_simplified {
+    justify-content: space-between;
+    align-items: stretch;  /* Allow children to stretch full height for underline */
+    padding-left: var(--navbar-edge-padding);
+    padding-right: 0;  /* Right padding handled by hamburger zone */
+}
+
+.contMenu_simplified .navBarContLogo_left {
+    position: relative;
+    left: auto;
+    flex-shrink: 0;
+}
+
+/************************ Brand Tabs in Header **************************/
+
+.navBar_brandTabs {
+    display: flex;
+    align-items: stretch;  /* Tabs stretch to full height */
+    justify-content: center;
+    flex: 1;
+    gap: 0;
+    height: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;  /* Firefox */
+    background-color: #f0f0f0;  /* Slightly darker gray */
+    margin: 0 1rem;
+}
+
+.navBar_brandTabs::-webkit-scrollbar {
+    display: none;  /* Chrome/Safari */
+}
+
+.navBar_brandTab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 100%;
+    padding: 0 1.25rem;
+    background: transparent;
+    border: none;
+    font-family: var(--font-style-medium);
+    font-size: 13px;
+    color: var(--text-gray-color-2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+}
+
+.navBar_brandTab:hover {
+    color: var(--color-web-1);
+}
+
+.navBar_brandTab:focus-visible {
+    outline: 2px solid var(--color-web-1);
+    outline-offset: -2px;
+}
+
+/* Active underline - flush with bottom edge */
+.navBar_brandTab::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+
+.navBar_brandTab--active {
+    color: var(--color-web-1);
+    font-family: var(--font-style-bold);
+}
+
+.navBar_brandTab--active::after {
+    background-color: var(--color-web-1);
 }
 
 .contMenu_menuHidden {                              /* Estilos para cuando el menu esta oculto (en celus portrait por ejemplo) */
@@ -65,7 +151,7 @@
 }
 
 .navBarLogo {
-    height: 50%;
+    height: 60%;
 }
 
 .iconoMenu {
@@ -223,8 +309,24 @@
 
 @media only screen and (orientation: portrait) {
 
+    .contMenu_simplified {
+        padding-left: 1.5rem;  /* Reduced padding on portrait for more space */
+    }
+
     .navBarContLogo_left {
-        position: absolute;
-        left: 2rem;
+        position: relative;
+        left: auto;
+    }
+
+    /* Brand tabs responsive - smaller on mobile */
+    .navBar_brandTabs {
+        margin: 0 0.5rem;
+        justify-content: flex-start;
+    }
+
+    .navBar_brandTab {
+        padding: 0 0.75rem;
+        font-size: 11px;
+        letter-spacing: 0.5px;
     }
 }
