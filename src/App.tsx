@@ -8,6 +8,7 @@ import Footer from "./components/footer/Footer";
 import LandingNavBar from "./components/landing/landingNavBar/LandingNavBar";
 import NavBar from "./components/navBar/NavBar";
 import OrderHTML from "./components/orderForMail/OrderHTML";
+import { BrandsProvider } from "./context/brandsContext";
 import { SpinnerContext } from "./context/spinnerContext";
 import { StreamChatContext } from "./context/streamChatContext";
 import { updateCart } from "./features/cartSlice";
@@ -237,7 +238,7 @@ function MainApp () {
     const getNavBar = () => location.pathname.includes("landing") ? <LandingNavBar/> : <NavBar/>;
   
     return (
-        <>
+        <BrandsProvider>
             {buyActivityPopUp}
             {spinner}
             {getNavBar()}
@@ -249,7 +250,7 @@ function MainApp () {
                 <Route path="/landing/novedad/:slug" element={<New/>}/>
             </Routes>
             <Footer/>
-        </>
+        </BrandsProvider>
     );
 }
 

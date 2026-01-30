@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "../../components/cards/product/Product";
 import ProductDetailModal from "../../components/productDetailModal/ProductDetailModal";
+import { useBrands } from "../../context/brandsContext";
 import { SpinnerContext } from "../../context/spinnerContext";
 import { StreamChatContext } from "../../context/streamChatContext";
 import { getProductsFiltered, getProductsFilteredRowsQuantity, getTable } from "../../services/database";
@@ -33,7 +34,7 @@ function Home() {
     const [currentBrandImageSrc, setCurrentBrandImageSrc] = useState ("");
     const [products, setProducts] = useState <JSX.Element[] | null> (null);
     const [productsData, setProductsData] = useState<Producto[] | null>(null);
-    const [categories, setCategories] = useState <JSX.Element[]> ([]);
+    const [categoriesData, setCategoriesData] = useState<Array<{id: number, nombre: string}>>([]);
     const [productsFound, setProductsFound] = useState <number> (0);
     const [pagesIndex, setPagesIndex] = useState <JSX.Element[]> ([]); 
     const query = useQuery();                                                                                        //Hook para leer querys de url
@@ -157,11 +158,15 @@ function Home() {
     const [isFilterLoading, setIsFilterLoading] = useState(false);
     const brandIdRef = useRef<string>("");
     const [brandIdInitialized, setBrandIdInitialized] = useState(false);
+    const [activeBrandsState, setActiveBrandsState] = useState<Marca[]>([]);
 
     const { streamChat } = useContext(StreamChatContext);
     const { email, city, name, lastName, dolar } = useSelector((state: RootState) => state.user.value);
     const dispatch = useDispatch();
     const currencyIsUsd = dolar ?? true;
+    
+    // Brands context for sharing with NavBar
+    const { setBrands: setBrandsContext, setActiveBrandId, setOnBrandSelect } = useBrands();
         
     let pageNumberFromQuery = pageString ? parseInt(pageString) : 1;                                                //Si pageString es un "string" parseInt da NaN, entonces pageNumberFromQuery = NaN (que equivale a false)
     if (!pageNumberFromQuery || pageNumberFromQuery < 1 || pageNumberFromQuery%1 !== 0) pageNumberFromQuery = 1;
@@ -175,6 +180,47 @@ function Home() {
         setIsModalOpen(false);
         setModalProductID(null);
     };
+
+    // Handler for brand selection from BrandTabs (used by NavBar via context)
+    const handleBrandTabSelect = (brandId: string) => {
+        const selectedBrand = activeBrandsState.find((brand) => brand.id.toString() === brandId);
+        if (selectedBrand) {
+            // Update the dropdown image
+            const currencyBrandImg = document.querySelector(".currencyBrandImg") as HTMLImageElement;
+            if (currencyBrandImg) {
+                currencyBrandImg.src = selectedBrand.logo;
+            }
+            // Update background image
+            setBgBrandImageSrc(selectedBrand.imagen);
+            setCurrentBrandImageSrc(selectedBrand.logo);
+        }
+        // Reset filters when changing brand
+        setFilterState({
+            searchWords: [],
+            categories: [],
+            priceRange: null,
+            orderBy: "default"
+        });
+        setSelectedCategories([]);
+        navigate(`/home?page=1&brand=${brandId}`);
+    };
+
+    // Sync brands data and handler with context for NavBar
+    useEffect(() => {
+        if (activeBrandsState.length > 0) {
+            setBrandsContext(activeBrandsState);
+        }
+    }, [activeBrandsState, setBrandsContext]);
+
+    useEffect(() => {
+        setOnBrandSelect(handleBrandTabSelect);
+    }, [activeBrandsState, setOnBrandSelect]);
+
+    useEffect(() => {
+        if (brandIdRef.current) {
+            setActiveBrandId(brandIdRef.current);
+        }
+    }, [brandIdRef.current, setActiveBrandId]);
     
     /************************* Centralized function to fetch products with filters ***************************/
     
@@ -190,8 +236,8 @@ function Home() {
     ) => {
         setIsFilterLoading(true);
         
-        // Limpiar estado al iniciar nueva búsqueda
-        setProductsFound(0);
+        // Clear products display but keep productsFound until new data arrives
+        // This prevents the counter from showing 0 during loading
         setProducts([]);
         setPagesIndex([]);
         
@@ -458,7 +504,7 @@ function Home() {
     /********************************************** Abrimos los filtros si se dejaron abiertos *******************************************/
 
     useEffect(() => {                                                                                               //Si abrimos el filtro esperamos a que se renderizen las categorias para que el filtro tenga su scrollHeightFinal
-        if (!firstTimeShownFilters.current || !categories.length) return;
+        if (!firstTimeShownFilters.current || !categoriesData.length) return;
         firstTimeShownFilters.current = false;        
         const filterStatusJSON = localStorage.getItem("filtersStatus");
         if (!filterStatusJSON) return;
@@ -466,7 +512,7 @@ function Home() {
         if (filterStatusOBJ.filtersOpen) {
             handleShowFilters();
         }
-    }, [categories]);
+    }, [categoriesData]);
         
     /************************************** Almacenamiento de opciones de filtro en el localstorage **************************************/
 
@@ -563,6 +609,7 @@ function Home() {
             const activeBrands: Marca[] = response0.data.filter((brand: any) => brand.estado === "1");
             activeBrands.sort((a: any, b: any) => a.orden - b.orden);
             activeBrandsRef.current = activeBrands;
+            setActiveBrandsState(activeBrands);
             
             // Normalize brandId using helper function with default to brand id=135, or first brand as fallback
             const brand135 = activeBrands.find((brand: Marca) => brand.id === 135);
@@ -591,37 +638,13 @@ function Home() {
              
             const response3 = await getTable({tableName: "categoria"});                                                                                              
             if (response3.success) {
-                const categoriesNamesArr = response3.data.map((categorie: any, index: number) => {
-                    const categoryId = parseInt(categorie.id, 10);
-                    const isChecked = selectedCategories.includes(categoryId);
-                    
-                    return (
-                        <div className="filterInputCont flex" key={index}>
-                            <div className="filterCheckBox">
-                                <input 
-                                    type="checkbox" 
-                                    className="filterCheckBox_hidden filterCheckBoxOfCategorie" 
-                                    id={categorie.id.toString()}
-                                    checked={isChecked}
-                                    onChange={(e) => {
-                                        const catId = parseInt(e.target.id, 10);
-                                        if (e.target.checked) {
-                                            setSelectedCategories(prev => [...prev, catId]);
-                                        } else {
-                                            setSelectedCategories(prev => prev.filter(id => id !== catId));
-                                        }
-                                    }}
-                                    onClick={searchByCategorieAndPriceRange}
-                                />     
-                                <div className="filterCheckBox_shown flex"></div>                                                        
-                            </div>
-                            <p className="filterCategorieName">{categorie.nombre}</p>
-                        </div>
-                    );
-                });
-                setCategories(categoriesNamesArr);
+                const categoriesArr = response3.data.map((categorie: any) => ({
+                    id: parseInt(categorie.id, 10),
+                    nombre: categorie.nombre
+                }));
+                setCategoriesData(categoriesArr);
             } else {
-                setCategories([]);
+                setCategoriesData([]);
             }
 
             /************************* Obtención de datos de Paños ***************************/
@@ -768,10 +791,10 @@ function Home() {
 
     useEffect(() => {
         // Sync selectedCategories with filterState when categories change
-        if (categories.length > 0 && selectedCategories.length === 0 && categoriesArrInOBJ.length > 0) {
+        if (categoriesData.length > 0 && selectedCategories.length === 0 && categoriesArrInOBJ.length > 0) {
             setSelectedCategories(categoriesArrInOBJ);
         }
-    }, [categories, categoriesArrInOBJ]);
+    }, [categoriesData, categoriesArrInOBJ]);
 
     const getCategories = (): number[] => {
         return selectedCategories;
@@ -913,21 +936,51 @@ function Home() {
         return checkIfRange();
     };
     
-    const searchByCategorieAndPriceRange = () => {
+    const searchByCategorieAndPriceRange = (newCategories?: number[]) => {
         saveScrollPosition();
         saveInputsState();
         
         // Get price range from refs
         const priceRangeValue = checkIfRange();
         
+        // Use provided categories or current selectedCategories
+        const categoriesToUse = newCategories !== undefined ? newCategories : selectedCategories;
+        
         // Update filter state with current selected categories and price range
         setFilterState(prev => ({
             ...prev,
-            categories: selectedCategories,
+            categories: categoriesToUse,
             priceRange: priceRangeValue
         }));
         
         // Reset to page 1 when filtering
+        navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
+    };
+
+    // Toggle category selection (multi-select behavior)
+    const handleCategoryToggle = (categoryId: number) => {
+        const isCurrentlySelected = selectedCategories.includes(categoryId);
+        let newCategories: number[];
+        
+        if (isCurrentlySelected) {
+            // Deselect: remove from array
+            newCategories = selectedCategories.filter(id => id !== categoryId);
+        } else {
+            // Select: add to array
+            newCategories = [...selectedCategories, categoryId];
+        }
+        
+        setSelectedCategories(newCategories);
+        
+        // Trigger search with new categories immediately
+        saveScrollPosition();
+        saveInputsState();
+        const priceRangeValue = checkIfRange();
+        setFilterState(prev => ({
+            ...prev,
+            categories: newCategories,
+            priceRange: priceRangeValue
+        }));
         navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
     };
 
@@ -1134,6 +1187,17 @@ function Home() {
             <div className="homePageFiltersCont flex">                                                         {/* Ventana principal de filtros */}   
                 <div  className="homePageFiltersInternalCont flex wrap">
                     <div className="homePageFinderMainCont flex">
+                        {/* Brand Badge */}
+                        {currentBrandImageSrc && (
+                            <div className="homePageBrandBadge">
+                                <span className="homePageBrandBadge_label">Marca</span>
+                                <img 
+                                    src={currentBrandImageSrc} 
+                                    alt="Marca seleccionada" 
+                                    className="homePageBrandBadge_logo"
+                                />
+                            </div>
+                        )}
                         <div className="homePageFinderCont flex">
                             <input
                                 type="text"
@@ -1202,12 +1266,26 @@ function Home() {
                         </div>
                         <div className="filtersShownTypesCont filtersShownInternalCont flex">
                             <p className="filtersShownTitle">Tipo</p>
-                            <div className="filtersShownTypes flex">
-                                {categories}
+                            <div className="filtersShownTypes flex" role="group" aria-label="Filtrar por tipo">
+                                {categoriesData.map((category) => {
+                                    const isChecked = selectedCategories.includes(category.id);
+                                    return (
+                                        <button
+                                            key={category.id}
+                                            type="button"
+                                            className={`filterInputCont flex ${isChecked ? "filterInputCont--checked" : ""}`}
+                                            onClick={() => handleCategoryToggle(category.id)}
+                                            aria-pressed={isChecked}
+                                        >
+                                            <span className={`filterCheckBox_toggle ${isChecked ? "filterCheckBox_toggle--checked" : ""}`} aria-hidden="true" />
+                                            <span className="filterCategorieName">{category.nombre}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
                         <div className="filtersPriceRangeCont filtersShownInternalCont flex">
-                            <p className="filterPriceRangeTitle">RANGO DE<br />PRECIO</p>
+                            <p className="filterPriceRangeTitle">RANGO DE PRECIO</p>
                             <div className="filterPriceInputsCont flex">
                                 <input 
                                     type="number" 
@@ -1223,7 +1301,7 @@ function Home() {
                                     defaultValue={filterState.priceRange ? filterState.priceRange[1] : ""} 
                                 />
                             </div>
-                            <button className="filterButton" onClick={searchByCategorieAndPriceRange} disabled={isFilterLoading}>
+                            <button className="filterButton" onClick={() => searchByCategorieAndPriceRange()} disabled={isFilterLoading}>
                                 {isFilterLoading ? <span className="filterButtonLoader"></span> : "Filtrar"}
                             </button>
                         </div>
@@ -1231,24 +1309,26 @@ function Home() {
                 </div>
             </div>
 
-            {                                                                                                          /* Productos y paginación */  
-                productsFound !== 0 &&
-                <div className="homePagesIndexContainer flex">
-                    <div 
-                        className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                        onClick={ () => navigate(`/home?page=${calculatePreviousPage()}&brand=${getCurrentBrandId()}`) } 
-                    >
-                        ‹ 
-                    </div>
-                    {pagesIndex}
-                    <div 
-                        className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                        onClick={ () => navigate(`/home?page=${calculateNextPage()}&brand=${getCurrentBrandId()}`) } 
-                    > 
-                        › 
-                    </div>
-                </div>
-            }
+            {/* Productos y paginación - wrapper always rendered for consistent spacing */}
+            <div className={`homePagesIndexContainer flex ${productsFound === 0 ? "homePagesIndexContainer--empty" : ""}`}>
+                {productsFound !== 0 && (
+                    <>
+                        <div 
+                            className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
+                            onClick={ () => navigate(`/home?page=${calculatePreviousPage()}&brand=${getCurrentBrandId()}`) } 
+                        >
+                            ‹ 
+                        </div>
+                        {pagesIndex}
+                        <div 
+                            className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
+                            onClick={ () => navigate(`/home?page=${calculateNextPage()}&brand=${getCurrentBrandId()}`) } 
+                        > 
+                            › 
+                        </div>
+                    </>
+                )}
+            </div>
             <div className="homeProductsContainer flex wrap">
                 {isFilterLoading || products === null ? renderSkeletons() : products}
             </div>

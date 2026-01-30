@@ -17,6 +17,13 @@
 .homePagesIndexContainer {
     width: 100%;
     margin: 1rem 0;
+    min-height: 2rem;  /* Consistent height even when empty */
+    background-color: var(--bg-color-1);
+}
+
+.homePagesIndexContainer--empty {
+    /* Maintain spacing when no pagination controls */
+    min-height: 1rem;
 }
 
 .homeNumberOfPage {
@@ -138,17 +145,50 @@
 .homePageFiltersInternalCont {
     width: 100%;
     height: 100%;
-    max-width: var(--seccions-landscape-content-width);
-    padding-left: 1rem;
-    padding-right: 1rem;
+    max-width: none;  /* Full width - removed content constraint */
+    padding-left: 2rem;
+    padding-right: 2rem;
     justify-content: space-between;
+    align-items: center;
 }
 
 .homePageFinderMainCont {
     height: 100%;
     width: 100%;
     justify-content: flex-start;
+    align-items: center;
     flex: 1;
+    gap: 1rem;
+}
+
+/************************ Brand Badge (MARCA) **************************/
+
+.homePageBrandBadge {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;  /* Left-aligned */
+    justify-content: center;
+    flex-shrink: 0;
+    gap: 0.15rem;
+    padding: 0.25rem 0;
+    padding-right: 1rem;
+    background-color: transparent;  /* No gray background */
+    border: none;
+    border-right: 1px solid var(--color-borders-light-gray);  /* Subtle separator */
+}
+
+.homePageBrandBadge_label {
+    font-family: var(--font-style-medium);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-gray-color-2);
+}
+
+.homePageBrandBadge_logo {
+    height: 1.75rem;
+    max-width: 6rem;
+    object-fit: contain;
 }
 
 .homePageFinderCont {
@@ -329,8 +369,11 @@
 }
 
 .filtersShownInt2Cont {
-    gap: 0.5rem;
-    padding-left: 0.75rem;
+    width: 100%;
+    gap: 1rem;
+    padding: 0;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 .filterPriceInputsCont {
@@ -339,6 +382,7 @@
 
 .filterPriceRangeTitle {
     line-height: 1.15;
+    white-space: nowrap;  /* Never wrap */
 }
 
 .filterPriceInput {
@@ -474,13 +518,13 @@
     transition-property: max-height;
     transition-duration: 0.5s;
     transition-timing-function: ease-out;
-    text-align: center;
 }
 
 .filtersShownIntCont {
     width: 100%;
-    max-width: var(--seccions-landscape-content-width);
-    display: inline-block;
+    max-width: none;  /* Full width - removed content constraint */
+    padding-left: 2rem;
+    padding-right: 2rem;
 }
 
 .filtersShownInt2Cont {
@@ -511,6 +555,34 @@
 
 .filterInputCont {
     margin: 0 0.5rem;
+    cursor: pointer;
+    padding: 0.25rem 0.35rem;
+    border-radius: 4px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    align-items: center;
+    /* Remove default button styles */
+    border: none;
+    background: transparent;
+    font-family: inherit;
+}
+
+.filterInputCont:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.filterInputCont:hover .filterCategorieName {
+    color: var(--color-web-1);
+}
+
+.filterInputCont:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--color-web-1-rgb, 0, 123, 255), 0.3);
+    background-color: rgba(0, 0, 0, 0.04);
+}
+
+.filterInputCont--checked .filterCategorieName {
+    color: var(--color-web-1);
+    font-family: var(--font-style-bold);
 }
 
 .filtersPriceRangeCont {
@@ -578,14 +650,16 @@
 .filterCheckBox {
     position: relative;
     margin-right: 0.5rem;
+    flex-shrink: 0;
 }
 
 .filterCheckBox_hidden {
     position: relative;
-    height: 15px;
-    width: 15px;
+    height: 16px;
+    width: 16px;
     opacity: 0;
     cursor: pointer;
+    z-index: 3;
 }
 
 .filterCheckBox_shown {
@@ -594,28 +668,37 @@
     right: 0;
     bottom: 0;
     top: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
     margin: auto;
     pointer-events: none;
-    height: 15px;
-    width: 15px;
+    height: 16px;
+    width: 16px;
     border-radius: 50%;
-    background-color: var(--color-borders-light-gray);
+    background-color: var(--bg-white);
+    border: 2px solid var(--color-borders-light-gray);
     z-index: 1;
+    box-sizing: border-box;
+}
+
+.filterInputCont:hover .filterCheckBox_shown {
+    border-color: var(--color-web-1);
+}
+
+.filterCheckBox input:checked ~ .filterCheckBox_shown {
+    background-color: var(--color-web-1);
+    border-color: var(--color-web-1);
 }
 
 .filterCheckBox input:checked ~ .filterCheckBox_shown:after {
     position: absolute;
     border-radius: 50%;
-    content: "\2714";
-    font-size: 7px;
-    line-height: 1;
-    color: white;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    margin: auto;
-    background-color: var(--color-web-1);
+    content: "";
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background-color: white;
     pointer-events: none;
     display: flex;
     justify-content: center;
@@ -626,6 +709,43 @@
 .filterCategorieName {
     font-size: var(--font-size-small);
     font-family: var(--font-style-medium);
+}
+
+/************************ Category Toggle (button-based) **************************/
+
+.filterCheckBox_toggle {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: var(--bg-white);
+    border: 2px solid var(--color-borders-light-gray);
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    box-sizing: border-box;
+}
+
+.filterInputCont:hover .filterCheckBox_toggle {
+    border-color: var(--color-web-1);
+}
+
+.filterCheckBox_toggle--checked {
+    background-color: var(--color-web-1);
+    border-color: var(--color-web-1);
+    position: relative;
+}
+
+.filterCheckBox_toggle--checked::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background-color: white;
+    border-radius: 50%;
 }
 
 .filterPriceRangeTitle {
@@ -736,6 +856,23 @@
         width: 100%;
         min-width: unset;
         border-right: none;
+        flex-wrap: wrap;
+    }
+
+    .homePageBrandBadge {
+        flex-direction: row;
+        width: auto;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        padding: 0.25rem 0;
+        padding-right: 0.75rem;
+        margin-bottom: 0;
+        border-right: 1px solid var(--color-borders-light-gray);
+        border-bottom: none;
+    }
+
+    .homePageBrandBadge_logo {
+        height: 1.25rem;
     }
 
     .homePageFinderCont {

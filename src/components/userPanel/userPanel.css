@@ -1,6 +1,7 @@
 .userNavbarOptions_Cont {
     margin-left: 2rem;
-    align-items: baseline;
+    align-items: center;
+    height: 100%;
 }
 
 .userNavbarOptions_nameCont {
@@ -58,11 +59,88 @@
     object-fit: contain;
 }
 
-/************************ responseive 2º sprint **************************/
+/************************ Hamburger Menu Button **************************/
+
+/* Hamburger zone: border-left as separator, symmetric padding around hamburger */
+.userNavbarOptions_hamburgerZone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background-color: #f5f5f5;
+    margin-left: 1rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    border-left: 1px solid #d9d9d9;
+    box-sizing: border-box;
+}
+
+.userNavbarOptions_hamburger {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    position: relative;
+}
+
+.hamburger_bar {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--text-gray-color-2);
+    border-radius: 1px;
+    transition: transform 0.25s ease, opacity 0.25s ease, width 0.25s ease;
+}
+
+.userNavbarOptions_hamburger:hover .hamburger_bar:nth-child(1) {
+    transform: translateX(-2px);
+}
+
+.userNavbarOptions_hamburger:hover .hamburger_bar:nth-child(2) {
+    width: 75%;
+}
+
+.userNavbarOptions_hamburger:hover .hamburger_bar:nth-child(3) {
+    transform: translateX(2px);
+}
+
+.userNavbarOptions_hamburger:hover .hamburger_bar {
+    background-color: var(--color-web-1);
+}
+
+.userNavbarOptions_hamburger:focus-visible {
+    outline: 2px solid var(--color-web-1);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/************************ responsive 2º sprint **************************/
 
 @media only screen and (orientation: portrait) {
 
     .navbarRegisterCont {
         display: none;
+    }
+
+    .userNavbarOptions_nameCont,
+    .userNavbarOptions_userIconCont {
+        display: none;
+    }
+
+    .userNavbarOptions_Cont {
+        margin-left: 0;
+    }
+
+    .userNavbarOptions_hamburgerZone {
+        margin-left: 0.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
 }
