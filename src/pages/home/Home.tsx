@@ -28,7 +28,6 @@ function Home() {
     const navigate = useNavigate();
     const location = useLocation();
     const quantityOfPages = useRef(0);
-    const [brands, setBrands] = useState <JSX.Element[]> ([]);
     const [bgBrandImageSrc, setBgBrandImageSrc] = useState("");
     const {showSpinner} = useContext(SpinnerContext);
     const [currentBrandImageSrc, setCurrentBrandImageSrc] = useState ("");
@@ -578,27 +577,6 @@ function Home() {
             const globalMultiplier = globalMultiplierData?.valor || 1;
             globalMultiplierRef.current = globalMultiplier;
 
-            /************** Seteo de selector de marca **************/
-            
-            const handleSelectBrand = (e: React.MouseEvent) => {
-                const currencyBrandImg = document.querySelector(".currencyBrandImg") as HTMLImageElement;
-                const brandImgSelected = e.target as HTMLImageElement;
-                const brandImgSelectedSrc = brandImgSelected.src;
-                currencyBrandImg.src = brandImgSelectedSrc;
-                const brandId = brandImgSelected.id;
-                // Reset filters when changing brand
-                setFilterState({
-                    searchWords: [],
-                    categories: [],
-                    priceRange: null,
-                    orderBy: "default"
-                });
-                setSelectedCategories([]);
-                saveScrollPosition();
-                saveInputsState();
-                navigate(`/home?page=1&brand=${brandId}`);
-            };
-
             const response0 = await getTable({tableName: "marca"});
             if (!response0.success) {
                 showElement(true);
@@ -628,11 +606,6 @@ function Home() {
                 setCurrentBrandImageSrc(activeBrands[0].logo);
                 setBgBrandImageSrc(activeBrands[0].imagen);
             }
-                                                                                                                            
-            const brandsJSX = activeBrands.map((brand: any, index: number) => 
-                <img src={brand.logo} alt={brand.descripcion} id={brand.id} className="brandLogoImg" key={index} onClick={handleSelectBrand}/>
-            );                                      
-            brandsJSX.length ? setBrands(brandsJSX) : setBrands([]);
 
             /************************** Obtenemos las categorías para listarlas en el filtro ******************************/
              
@@ -1079,25 +1052,6 @@ function Home() {
         navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
     };
 
-    const closeBrandsDropDown = () => {
-        const brandsDropdown = document.querySelector(".homeBrandDropdownCont") as HTMLDivElement;
-        if (!brandsDropdown) return;
-        brandsDropdown.classList.add("displayNone");
-        document.body.removeEventListener("click", closeBrandsDropDown);
-    };
-
-    const handleBrandsSelect = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        const brandsDropdown = document.querySelector(".homeBrandDropdownCont") as HTMLDivElement;
-        if (!brandsDropdown) return;
-        if (brandsDropdown.getAttribute("class")?.includes("displayNone")) {
-            brandsDropdown.classList.remove("displayNone");
-            document.body.addEventListener("click", closeBrandsDropDown);
-        } else {
-            brandsDropdown.classList.add("displayNone");
-        }
-    };
-
     /************************************** Lógica de busqueda dinámica de productos **************************************/
 
     const closeSearchWordsResults = () => {
@@ -1168,20 +1122,6 @@ function Home() {
 
             <div className="homePageBrandSelectCont flex">
                 <img src={bgBrandImageSrc} alt="" className="homePageBrandSelectImg"/>
-
-                <div className="homeBrandsSelectMainCont flex">
-                    <div className="homeBrandsSelectCont flex column">
-                        <p className="homeBrandsSelectTitle">Elije una marca:</p>
-                        <div className="homeBrandsSelect flex" onClick={handleBrandsSelect}>                        {/* Selector de Marcas */}                                  
-                            <div className="homeBrandDropdownCont displayNone dropDownAnimation1_in flex column">
-                                {brands}
-                            </div>
-                            <img src={currentBrandImageSrc} alt="Marca actual" className="currencyBrandImg"/>
-                            <p className="homeBrandSelectSymbol flex">V</p>
-                        </div>
-                    </div>
-                </div>
-
             </div>
 
             <div className="homePageFiltersCont flex">                                                         {/* Ventana principal de filtros */}   

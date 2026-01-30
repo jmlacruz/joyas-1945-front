@@ -87,9 +87,28 @@ function UserPanel (props: {isMenuHidden: boolean}) {
             
             :
 
-            <Link to="/registro">
-                <button className="navbarRegisterCont customButton1 flex">Registrarse</button>
-            </Link>
+            <div className="userNavbarOptions_Cont userNavbarOptions_Cont--public flex">
+                <Link to="/registro">
+                    <button className="navbarRegisterCont customButton1 flex">Registrarse</button>
+                </Link>
+                {
+                    props.isMenuHidden &&
+                    <div className="userNavbarOptions_hamburgerZone">
+                        <button 
+                            className="userNavbarOptions_hamburger" 
+                            type="button" 
+                            aria-label={isSidePanelOpen ? "Cerrar menú lateral" : "Abrir menú lateral"}
+                            aria-expanded={isSidePanelOpen}
+                            onClick={handleSidePanelToggle}
+                        >
+                            <span className="hamburger_bar"></span>
+                            <span className="hamburger_bar"></span>
+                            <span className="hamburger_bar"></span>
+                        </button>
+                    </div>
+                }
+                <SidePanel isOpen={isSidePanelOpen} onClose={handleSidePanelClose} />
+            </div>
     );
 }
 

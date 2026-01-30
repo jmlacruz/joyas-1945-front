@@ -68,70 +68,6 @@
     z-index: 1;
 }
 
-.homeBrandsSelectMainCont {
-    width: 100%;
-    max-width: var(--seccions-landscape-content-width);
-    padding-left: 1rem;
-    padding-right: 1rem;
-    justify-content: flex-start;
-}
-
-.homeBrandsSelectCont {
-    z-index: 20;
-    align-items: flex-start;
-}
-
-.homeBrandsSelectTitle {
-    margin-bottom: 0.5rem;
-    color: var(--text-gray-color);
-}
-
-.homeBrandsSelect {
-    position: relative;
-    height: 2.5rem;
-    width: 12rem;
-    border-radius: 1.25rem;
-    background-color: var(--bg-white);
-    cursor: pointer;
-    box-shadow: 10px 10px 40px -20px rgba(0,0,0,0.40);
-}
-
-.homeBrandDropdownCont {
-    position: absolute;
-    width: 100%;
-    top: calc(100% + 0.5rem);
-    left: 0;
-    background-color: var(--bg-white);
-    box-shadow: 16px 21px 69px -33px rgba(0,0,0,0.75);
-}
-
-.currencyBrandImg {
-    width: 70%;
-    max-height: 35%;
-    object-fit: contain;
-}
-
-.brandLogoImg {
-    object-fit: contain;
-    height: 3rem;
-    padding: 1rem 0;
-    width: 100%;
-}
-
-.brandLogoImg:hover {
-    background-color: #E8F8F0;
-}
-
-.homeBrandSelectSymbol {
-    position: absolute;
-    right: 1rem;
-    top: 0;
-    bottom: 0;
-    margin: auto;
-    font-family: var(--font-style-light);
-    transform: scaleY(75%) scaleX(125%);
-}
-
 /*******************************************************************/
 
 .homePageFiltersCont {
@@ -920,20 +856,6 @@
     }
 
     .filterOrderOptionsDropDownCont {
-        width: 100%;
-    }
-
-    .homePageBrandSelectCont {
-        justify-content: center;
-    }
-
-    .homeBrandsSelectCont {
-        width: 100%;
-        margin-left: 0;
-        padding: 0 var(--padding-horizontal-seccions-portrait);
-    }
- 
-    .homeBrandsSelect {
         width: 100%;
     }
 
