@@ -318,15 +318,15 @@
         left: auto;
     }
 
-    /* Brand tabs responsive - smaller on mobile */
+    /* Hide brand tabs in header on mobile - they appear below hero instead */
     .navBar_brandTabs {
-        margin: 0 0.5rem;
-        justify-content: flex-start;
+        display: none;
     }
+}
 
-    .navBar_brandTab {
-        padding: 0 0.75rem;
-        font-size: 11px;
-        letter-spacing: 0.5px;
+@media only screen and (max-width: 768px) {
+    /* Also hide on small landscape screens */
+    .navBar_brandTabs {
+        display: none;
     }
 }

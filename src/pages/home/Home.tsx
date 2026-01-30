@@ -1124,6 +1124,26 @@ function Home() {
                 <img src={bgBrandImageSrc} alt="" className="homePageBrandSelectImg"/>
             </div>
 
+            {/* Mobile Brands Navigation - visible only on mobile */}
+            {activeBrandsState.length > 0 && (
+                <nav className="homeMobileBrandsNav" aria-label="Navegación de marcas">
+                    {activeBrandsState.map((brand) => {
+                        const isActive = brand.id.toString() === brandIdRef.current;
+                        return (
+                            <button
+                                key={brand.id}
+                                type="button"
+                                className={`homeMobileBrandsNav_tab ${isActive ? "homeMobileBrandsNav_tab--active" : ""}`}
+                                onClick={() => handleBrandTabSelect(brand.id.toString())}
+                                aria-current={isActive ? "true" : undefined}
+                            >
+                                {brand.descripcion}
+                            </button>
+                        );
+                    })}
+                </nav>
+            )}
+
             <div className="homePageFiltersCont flex">                                                         {/* Ventana principal de filtros */}   
                 <div  className="homePageFiltersInternalCont flex wrap">
                     <div className="homePageFinderMainCont flex">
