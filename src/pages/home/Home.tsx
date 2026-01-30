@@ -4,7 +4,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import ProductCard from "../../components/cards/product/Product";
-import ProductDetailModal from "../../components/productDetailModal/ProductDetailModal";
+import ProductDetailModal from "../../components/productModal/ProductModal";
 import { useBrands } from "../../context/brandsContext";
 import { SpinnerContext } from "../../context/spinnerContext";
 import { StreamChatContext } from "../../context/streamChatContext";
@@ -1355,6 +1355,7 @@ function Home() {
                 productID={modalProductID}
                 isOpen={isModalOpen}
                 onClose={closeModal}
+                onProductClick={showProductDetails}
             />
         </div>
     );

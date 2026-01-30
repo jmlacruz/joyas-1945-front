@@ -3,11 +3,10 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getProductsFiltered } from "../../../services/database";
 import { RootState } from "../../../store";
-import { formatDecimalPrice } from "../../../utils/decimals";
 import SliderCard from "../../cards/sliderCard/SliderCard";
 import "./productDetailSlider.css";
 
-function ProductDetailSlider (props: {categoryId: number, brandId: number}) {
+function ProductDetailSlider (props: {categoryId: number, brandId: number, onProductClick?: (productId: number) => void}) {
 
     const [sliderCards, setSliderCards] = useState <JSX.Element[]> ([]);
     const allowSliderMove = useRef(true);
@@ -38,8 +37,15 @@ function ProductDetailSlider (props: {categoryId: number, brandId: number}) {
                     <SliderCard 
                         description={productData.nombre} 
                         imgSrc={productData.thumbnail1} 
-                        price={productData?.precioDolar && productData?.precio ? (dolar ? formatDecimalPrice(productData.precioDolar) : Math.ceil(productData.precio).toString()) : ""}
-                        onClickFunction={() => navigate(`/productDetail/${productData.id}`)}             
+                        priceUSD={productData?.precioDolar}
+                        priceARS={productData?.precio}
+                        onClickFunction={() => {
+                            if (props.onProductClick) {
+                                props.onProductClick(productData.id);
+                            } else {
+                                navigate(`/productDetail/${productData.id}`);
+                            }
+                        }}             
                         productID={productData.id}
                         key={productData.id}
                         dolar={dolar}

@@ -1,25 +1,26 @@
 .productDetailsPortrait_cont {
-    position: absolute;
-    top: var(--navbar-height);
-    left: 0;
+    position: relative;
     width: 100%;
-    min-height: calc(100vh - var(--navbar-height));
-    z-index: 900;
+    min-height: 100vh;
+    padding-top: var(--navbar-height);
     background-color: var(--bg-white);
     justify-content: space-between;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .productDetailsPortrait_backCont {      
     position: fixed;
-    bottom: 100%;
-    background-color: var(--bg-white);
     top: 0;
     left: 0;
+    background-color: var(--bg-white);
     height: var(--navbar-height);
     width: 50%;
     justify-content: flex-start;
     padding-left: 1.5rem;
+    display: flex;
+    align-items: center;
 }
 
 .productDetailsPortrait_backCont * {

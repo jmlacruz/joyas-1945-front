@@ -8,7 +8,7 @@ import { getPanoByProductId, getProductByID } from "../../services/database";
 import { sendActivityToChat } from "../../services/streamChat";
 import { RootState } from "../../store";
 import { Producto } from "../../types/database";
-import { formatDecimalPrice } from "../../utils/decimals";
+import { formatCurrencyPrice } from "../../utils/decimals";
 import { swalPopUp } from "../../utils/swal";
 import { showElement } from "../../utils/utils";
 import waitAllImagesCharged from "../../utils/waitAllImagesCharged";
@@ -16,7 +16,7 @@ import AddButton from "../buttons/addButton/AddButton";
 import ProductDetailSlider from "../sliders/productDetailSlider/ProductDetailSlider";
 import "./productDetails_landsCape.css";
  
-function ProductDetails_landsCape (props: {productID: number, onClose?: () => void}) {
+function ProductDetails_landsCape (props: {productID: number, onClose?: () => void, onLoaded?: () => void, onProductClick?: (productId: number) => void}) {
 
     const navigate = useNavigate();
     const cart = useSelector((state: RootState) => state.cart.value);
@@ -26,7 +26,7 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
     const [imageToDownloadSrc, setImageToDownloadSrc] = useState ("");
     const [productDetailSlider, setProductDetailSlider] = useState (<></>);
     const [quantity, setQuantity] = useState (0);
-    const { email, city, name, lastName, dolar } = useSelector((state: RootState) => state.user.value);
+    const { email, city, name, lastName } = useSelector((state: RootState) => state.user.value);
     const { streamChat } = useContext(StreamChatContext);
     const [pano, setPano] = useState("");
     const timeoutID = useRef <NodeJS.Timeout | null> (null);
@@ -35,10 +35,6 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
     useEffect(() => {
 
         showSpinner(true);
-
-        const scrollWidth = window.innerWidth - document.body.offsetWidth;                      //Se obtiene el ancho del scroll del body
-        document.body.style.overflow = "hidden";
-        document.body.style.marginRight = scrollWidth + "px";                                   //Al ocultar el scroll del body creamos un margen de ancho igual al del scroll para que el body no se mueva    
     
         (async () => {
             const response = await getProductByID(props.productID);
@@ -46,15 +42,11 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
                 const productData: Producto = response.data[0];
                 setProductData(productData);
                 setImageToDownloadSrc(productData.foto1);
-                setProductDetailSlider(<ProductDetailSlider brandId={productData.marca} categoryId={productData.categoria}/>);
+                setProductDetailSlider(<ProductDetailSlider brandId={productData.marca} categoryId={productData.categoria} onProductClick={props.onProductClick}/>);
                 setPano(await getPanoByProductId(props.productID));
+                props.onLoaded?.(); // Notificar que los datos están listos
             }
         })();
-
-        return () => {
-            document.body.style.overflow = "auto";                                             //Restauramos estilos del body al cerrar el modal
-            document.body.style.marginRight = "0px";
-        };
         
     }, [props]);     
 
@@ -177,7 +169,7 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
                     <div className="productDetails_mainDescriptionCont flex column">
                         <h2 className="productDetails_descriptionText">{productData? productData.nombre : ""}</h2>
                         <p className="productDetails_clothText">Paños: <span>{pano}</span></p>
-                        <p className="productDetails_price">{dolar ? "USD" : "$"} {productData && productData.precioDolar && productData.precio ? (dolar ? formatDecimalPrice(productData.precioDolar) : productData.precio) : ""}</p>
+                        <p className="productDetails_price">{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</p>
                         <p className="productDetails_article">Artículo: <span>{productData? productData.codigo : ""}</span> </p>
                         <p className="productDetails_quantityText">CANTIDAD</p>
                         <div className="productDetails_buttonsCont flex">

@@ -8,12 +8,12 @@ import { getPanoByProductId, getProductByID } from "../../services/database";
 import { sendActivityToChat } from "../../services/streamChat";
 import { RootState } from "../../store";
 import { Producto } from "../../types/database";
-import { formatDecimalPrice } from "../../utils/decimals";
+import { formatCurrencyPrice } from "../../utils/decimals";
 import { showElement } from "../../utils/utils";
 import waitAllImagesCharged from "../../utils/waitAllImagesCharged";
 import "./productDetails_portrait.css";
  
-function ProductDetails_portrait (props: {productID: number, onClose?: () => void}) {
+function ProductDetails_portrait (props: {productID: number, onClose?: () => void, onLoaded?: () => void, onProductClick?: (productId: number) => void}) {
 
     const cart = useSelector((state: RootState) => state.cart.value);
     const dispatch = useDispatch();
@@ -22,7 +22,7 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
     const [imageToDownloadSrc, setImageToDownload] = useState ("");
     const [quantity, setQuantity] = useState (0);
     const navigate = useNavigate();
-    const { email, city, name, lastName, dolar } = useSelector((state: RootState) => state.user.value);
+    const { email, city, name, lastName } = useSelector((state: RootState) => state.user.value);
     const { streamChat } = useContext(StreamChatContext);
     const [pano, setPano] = useState("");
     const timeoutID = useRef <NodeJS.Timeout | null> (null);
@@ -48,6 +48,7 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
                 setProductData(productData);
                 setImageToDownload(productData.foto1);
                 setPano(await getPanoByProductId(props.productID));
+                props.onLoaded?.(); // Notificar que los datos están listos
             }
         })();
        
@@ -236,7 +237,7 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
                 <div className="productDetailsPortrait_download flex" onClick={() => downloadImage(imageToDownloadSrc)}>
                     <img src="/images/icons/downloadImage.png" alt="Descargar Imagen" />
                 </div>
-                <div className="productDetailsPortrait_price flex">{dolar ? "USD" : "$"} {productData && productData.precioDolar && productData.precio ? (dolar ? formatDecimalPrice(productData.precioDolar) : productData.precio) : ""}</div>
+                <div className="productDetailsPortrait_price flex">{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</div>
                 <div className="productDetailsPortrait_ws flex">
                     <img src="/images/icons/ws.png" alt="WhatsApp" />
                 </div>
