@@ -504,7 +504,12 @@ function Home() {
 
     useEffect(() => {                                                                                               //Si abrimos el filtro esperamos a que se renderizen las categorias para que el filtro tenga su scrollHeightFinal
         if (!firstTimeShownFilters.current || !categoriesData.length) return;
-        firstTimeShownFilters.current = false;        
+        firstTimeShownFilters.current = false;
+        
+        // On mobile (<=768px), always start with filters collapsed for faster product visibility
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) return;  // Skip restoring filter state on mobile
+        
         const filterStatusJSON = localStorage.getItem("filtersStatus");
         if (!filterStatusJSON) return;
         const filterStatusOBJ: FiltersStatus = JSON.parse(filterStatusJSON);
@@ -1245,19 +1250,21 @@ function Home() {
                             </div>
                         </div>
                         <div className="filtersPriceRangeCont filtersShownInternalCont flex">
-                            <p className="filterPriceRangeTitle">RANGO DE PRECIO</p>
+                            <p className="filterPriceRangeTitle">PRECIO</p>
                             <div className="filterPriceInputsCont flex">
                                 <input 
                                     type="number" 
                                     className="filterPriceInput filterPriceInputMin" 
                                     ref={priceMinRef}
+                                    placeholder="min"
                                     defaultValue={filterState.priceRange ? filterState.priceRange[0] : ""} 
                                 />
-                                -
+                                <span className="filterPriceInputSeparator">-</span>
                                 <input 
                                     type="number" 
                                     className="filterPriceInput filterPriceInputMax" 
                                     ref={priceMaxRef}
+                                    placeholder="max"
                                     defaultValue={filterState.priceRange ? filterState.priceRange[1] : ""} 
                                 />
                             </div>
