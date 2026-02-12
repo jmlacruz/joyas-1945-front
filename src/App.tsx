@@ -53,6 +53,8 @@ function MainApp () {
     const { spinner, showSpinner } = useContext <SpinnerContextType> (SpinnerContext);
     const { registered, email, userId, streamChatToken, name, lastName, city } = useSelector((state: RootState) => state.user.value);
     const cart = useSelector((state: RootState) => state.cart.value);
+    const cartRef = useRef(cart);  // Ref to read latest cart in async flows without adding to deps
+    cartRef.current = cart;
     const [cartFromDbIsRead, setCartFromDbIsRead]= useState (false);
     const [buyActivityPopUp, setBuyActivityPopUp] = useState <JSX.Element | null> (null);
     const { streamChat } = useContext(StreamChatContext);
@@ -152,8 +154,11 @@ function MainApp () {
                 dispatch(updateCart({cartItems: cartItemsOBJ, generalObservation: cardDataFromDB.generalObservation || ""}));
                 setCartFromDbIsRead(true);                                                              //Indicamos que ya se leyó el carrito 
             } else if (response.success && !response.data.length) {                                     //No se encontró el carrito    
-                dispatch(updateCart({cartItems: [], generalObservation: ""}));
-                setCartFromDbIsRead(true); 
+                // Only clear cart if local cart is also empty; preserve non-empty local cart
+                if (!cartRef.current.cartItems.length) {
+                    dispatch(updateCart({cartItems: [], generalObservation: ""}));
+                }
+                setCartFromDbIsRead(true);  // Always set so saveCart can persist the real local cart 
             } else if (!response.success) {
                 console.error(response.message);
                 setCartFromDbIsRead(false);      
@@ -255,3 +260,4 @@ function MainApp () {
 }
 
 export default App;
+
