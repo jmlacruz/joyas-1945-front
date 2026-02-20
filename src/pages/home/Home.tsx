@@ -873,6 +873,24 @@ function Home() {
 
     const handleCurrencyToggle = (isUsdSelected: boolean) => {
         if (isUsdSelected === currencyIsUsd) return;
+        const mult = globalMultiplierRef.current;
+        if (mult && mult > 0) {
+            const minStr = priceMinRef.current?.value.trim() || "";
+            const maxStr = priceMaxRef.current?.value.trim() || "";
+            const minVal = minStr ? parseFloat(minStr) : NaN;
+            const maxVal = maxStr ? parseFloat(maxStr) : NaN;
+
+            // currencyIsUsd is the OLD value; isUsdSelected is the NEW value
+            if (isUsdSelected) {
+                // ARS → USD: divide by multiplier
+                if (!isNaN(minVal) && priceMinRef.current) priceMinRef.current.value = Math.round(minVal / mult).toString();
+                if (!isNaN(maxVal) && priceMaxRef.current) priceMaxRef.current.value = Math.round(maxVal / mult).toString();
+            } else {
+                // USD → ARS: multiply by multiplier
+                if (!isNaN(minVal) && priceMinRef.current) priceMinRef.current.value = Math.round(minVal * mult).toString();
+                if (!isNaN(maxVal) && priceMaxRef.current) priceMaxRef.current.value = Math.round(maxVal * mult).toString();
+            }
+        }
         dispatch(setDolar(isUsdSelected));
     };
 
