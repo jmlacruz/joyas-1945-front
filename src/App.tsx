@@ -38,6 +38,7 @@ import "./styles/generalStyles.css";
 import { ActivityData, CartDataFromDB, LastSessionTimestamp, StreamChatMessage } from "./types";
 import { SpinnerContextType } from "./types/spinner";
 import { isValidJSON } from "./utils/utils";
+import FloatingWhatsAppButton from "./components/floatingWhatsAppButton/FloatingWhatsAppButton";
 
 function App () {
     return (
@@ -255,6 +256,7 @@ function MainApp () {
                 <Route path="/landing/novedad/:slug" element={<New/>}/>
             </Routes>
             <Footer/>
+            <FloatingWhatsAppButton />
         </BrandsProvider>
     );
 }
