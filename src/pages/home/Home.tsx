@@ -188,6 +188,7 @@ function Home() {
     const navigate = useNavigate();
     const location = useLocation();
     const quantityOfPages = useRef(0);
+    const productsGridRef = useRef<HTMLDivElement>(null);
     const [bgBrandImageSrc, setBgBrandImageSrc] = useState("");
     const {showSpinner} = useContext(SpinnerContext);
     const [currentBrandImageSrc, setCurrentBrandImageSrc] = useState ("");
@@ -1074,6 +1075,54 @@ function Home() {
         return previousPage;
     };  
 
+    // Mobile swipe pagination on products grid
+    useEffect(() => {
+        const grid = productsGridRef.current;
+        if (!grid || !window.matchMedia(MOBILE_MQ).matches) return;
+
+        const INTERACTIVE = new Set(["BUTTON", "INPUT", "TEXTAREA", "SELECT", "A"]);
+        let startX = 0;
+        let startY = 0;
+        let swiping = false;
+
+        const onTouchStart = (e: TouchEvent) => {
+            const tag = (e.target as HTMLElement).closest("button, input, textarea, select, a");
+            if (tag && INTERACTIVE.has(tag.tagName)) return;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            swiping = true;
+        };
+
+        const onTouchEnd = (e: TouchEvent) => {
+            if (!swiping) return;
+            swiping = false;
+            const dx = e.changedTouches[0].clientX - startX;
+            const dy = e.changedTouches[0].clientY - startY;
+            if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy) * 1.5) return;
+
+            if (dx < 0) {
+                // Swipe left -> next page
+                const next = calculateNextPage();
+                if (next !== pageNumberFromQuery) {
+                    navigate(`/home?page=${next}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${getCurrentBrandId()}`);
+                }
+            } else {
+                // Swipe right -> previous page
+                const prev = calculatePreviousPage();
+                if (prev !== pageNumberFromQuery) {
+                    navigate(`/home?page=${prev}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${getCurrentBrandId()}`);
+                }
+            }
+        };
+
+        grid.addEventListener("touchstart", onTouchStart, { passive: true });
+        grid.addEventListener("touchend", onTouchEnd, { passive: true });
+        return () => {
+            grid.removeEventListener("touchstart", onTouchStart);
+            grid.removeEventListener("touchend", onTouchEnd);
+        };
+    }, [pageNumberFromQuery, orderBy]);
+
     /*************************** Sanitización de valores de rango de precio **************************/
 
     const checkIfRange = (): [number, number] | null => {
@@ -1482,7 +1531,7 @@ function Home() {
             </div>
 
             <div className="homePagesIndexContainer homePagesIndexContainer--spacer" />
-            <div className="homeProductsContainer flex wrap">
+            <div ref={productsGridRef} className="homeProductsContainer flex wrap">
                 {isFilterLoading || products === null ? renderSkeletons() : products}
             </div>
             {
