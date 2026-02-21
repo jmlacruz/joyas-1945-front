@@ -127,6 +127,28 @@
     background-color: var(--color-web-1);
 }
 
+/* OFERTAS tab - dark background, white text */
+.homeMobileBrandsNav_tab--ofertas {
+    background-color: #1a1a1a;
+    color: #fff;
+    border-radius: 2px;
+}
+
+.homeMobileBrandsNav_tab--ofertas:hover {
+    background-color: #333;
+    color: #fff;
+}
+
+.homeMobileBrandsNav_tab--ofertas-active {
+    background-color: #1a1a1a;
+    color: #fff;
+    font-family: var(--font-style-bold);
+}
+
+.homeMobileBrandsNav_tab--ofertas-active::after {
+    background-color: #fff;
+}
+
 /*******************************************************************/
 
 .homePageFiltersCont {

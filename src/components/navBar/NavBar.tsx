@@ -59,6 +59,14 @@ const NavBar = () => {
                             </button>
                         );
                     })}
+                    <button
+                        type="button"
+                        className={`navBar_brandTab navBar_brandTab--ofertas ${activeBrandId === "ofertas" ? "navBar_brandTab--ofertas-active" : ""}`}
+                        onClick={() => selectBrand("ofertas")}
+                        aria-current={activeBrandId === "ofertas" ? "true" : undefined}
+                    >
+                        OFERTAS
+                    </button>
                 </nav>
             )}
 
