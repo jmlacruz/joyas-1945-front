@@ -98,6 +98,29 @@
     background-color: var(--color-web-1);
 }
 
+/* OFERTAS tab - dark background, white text */
+.navBar_brandTab--ofertas {
+    background-color: #1a1a1a;
+    color: #fff;
+    border-radius: 2px;
+    margin-left: 4px;
+}
+
+.navBar_brandTab--ofertas:hover {
+    background-color: #333;
+    color: #fff;
+}
+
+.navBar_brandTab--ofertas-active {
+    background-color: #1a1a1a;
+    color: #fff;
+    font-family: var(--font-style-bold);
+}
+
+.navBar_brandTab--ofertas-active::after {
+    background-color: #fff;
+}
+
 .contMenu_menuHidden {                              /* Estilos para cuando el menu esta oculto (en celus portrait por ejemplo) */
     padding-left: 2rem;
     padding-right: 3rem;

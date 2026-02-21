@@ -20,6 +20,8 @@ import "./home.css";
  
 const useQuery = () => new URLSearchParams(useLocation().search);                                                   //Función para leer querys de url
 
+const OFERTAS_BRAND_ID = "ofertas";
+
 function Home() {
 
     const firstTime = useRef(true);
@@ -76,10 +78,11 @@ function Home() {
      
     // Helper function to normalize brandId from query params
     const getBrandIdFromQuery = (brandIdParam: string | null, defaultBrandId: string): string => {
-        // Handle null, empty string, or whitespace-only strings
         if (!brandIdParam || brandIdParam.trim() === "") {
             return defaultBrandId;
         }
+        // "ofertas" is a valid virtual brand ID
+        if (brandIdParam.trim() === OFERTAS_BRAND_ID) return OFERTAS_BRAND_ID;
         return brandIdParam.trim();
     };
 
@@ -182,18 +185,24 @@ function Home() {
 
     // Handler for brand selection from BrandTabs (used by NavBar via context)
     const handleBrandTabSelect = (brandId: string) => {
-        const selectedBrand = activeBrandsState.find((brand) => brand.id.toString() === brandId);
-        if (selectedBrand) {
-            // Update the dropdown image
-            const currencyBrandImg = document.querySelector(".currencyBrandImg") as HTMLImageElement;
-            if (currencyBrandImg) {
-                currencyBrandImg.src = selectedBrand.logo;
+        if (brandId === OFERTAS_BRAND_ID) {
+            // OFERTAS: keep hero image from first brand, clear brand badge
+            if (activeBrandsState.length > 0) {
+                setBgBrandImageSrc(activeBrandsState[0].imagen);
             }
-            // Update background image
-            setBgBrandImageSrc(selectedBrand.imagen);
-            setCurrentBrandImageSrc(selectedBrand.logo);
+            setCurrentBrandImageSrc("");
+        } else {
+            const selectedBrand = activeBrandsState.find((brand) => brand.id.toString() === brandId);
+            if (selectedBrand) {
+                const currencyBrandImg = document.querySelector(".currencyBrandImg") as HTMLImageElement;
+                if (currencyBrandImg) {
+                    currencyBrandImg.src = selectedBrand.logo;
+                }
+                setBgBrandImageSrc(selectedBrand.imagen);
+                setCurrentBrandImageSrc(selectedBrand.logo);
+            }
         }
-        // Reset filters when changing brand
+        // Reset filters when changing brand/ofertas
         setFilterState({
             searchWords: [],
             categories: [],
@@ -243,6 +252,7 @@ function Home() {
         try {
             const firstProduct = (page - 1) * resultsByPage;
             const globalMultiplier = globalMultiplierRef.current;
+            const isOfertas = brandId === OFERTAS_BRAND_ID;
             
             // Calculate price range with multiplier if needed
             const priceRangeForQuery = filters.priceRange && filters.priceRange.length === 2
@@ -251,17 +261,18 @@ function Home() {
                     : [filters.priceRange[0], filters.priceRange[1]])
                 : [];
             
+            const queryCondition = isOfertas
+                ? { field: "con_descuento", operator: "=", value: 1 as string | number }
+                : { field: "estado", operator: "=", value: "1" as string | number };
+            const queryBrand = isOfertas ? "" : brandId;
+
             // Get products count
             const response1 = await getProductsFilteredRowsQuantity({
-                condition: {
-                    field: "estado",
-                    operator: "=",
-                    value: "1"
-                },
+                condition: queryCondition,
                 searchWordsArr: filters.searchWords,
                 categoriesIdsArr: filters.categories,
                 priceRangeArr: priceRangeForQuery,
-                brand: brandId,
+                brand: queryBrand,
             });
             
             if (!response1.success || response1.data === null || response1.data === undefined) {
@@ -329,16 +340,12 @@ function Home() {
                 limit: resultsByPage,
                 offset: firstProduct,
                 fields: ["nombre", "precio", "codigo", "foto1", "foto2", "id", "con_descuento", "porcentaje_descuento", "precio_full"],
-                condition: {
-                    field: "estado",
-                    operator: "=",
-                    value: "1"
-                },
+                condition: queryCondition,
                 searchWordsArr: filters.searchWords,
                 categoriesIdsArr: filters.categories,
                 priceRangeArr: priceRangeForQuery,
                 orderBy: filters.orderBy || "default",
-                brand: brandId,
+                brand: queryBrand,
             });
             
             // Render products
@@ -604,7 +611,10 @@ function Home() {
             setBrandIdInitialized(true);
             
             const brandSelected = activeBrands.find((brand: any) => brand.id.toString() === brandId);
-            if (brandSelected) {
+            if (brandId === OFERTAS_BRAND_ID) {
+                setCurrentBrandImageSrc("");
+                setBgBrandImageSrc(activeBrands[0]?.imagen || "");
+            } else if (brandSelected) {
                 setCurrentBrandImageSrc(brandSelected.logo);
                 setBgBrandImageSrc(brandSelected.imagen);
             } else {
@@ -1102,20 +1112,20 @@ function Home() {
             return;
         }
    
+        const currentBrand = getCurrentBrandId();
+        const isOfertas = currentBrand === OFERTAS_BRAND_ID;
         const response2 = await getProductsFiltered({
             limit: 10, 
             offset: 0, 
             fields: ["nombre", "id", "codigo"],                                              
-            condition: {
-                field: "estado", 
-                operator: "=", 
-                value: "1"
-            },
+            condition: isOfertas
+                ? { field: "con_descuento", operator: "=", value: 1 }
+                : { field: "estado", operator: "=", value: "1" },
             searchWordsArr: searchWordsArrWithoutEmptyStrings,
             categoriesIdsArr: filterState.categories,
             priceRangeArr: filterState.priceRange ? (dolar ? [filterState.priceRange[0] * globalMultiplierRef.current, filterState.priceRange[1] * globalMultiplierRef.current] : [filterState.priceRange[0], filterState.priceRange[1]]) : [],
             orderBy: filterState.orderBy || "default",
-            brand: getCurrentBrandId() || (activeBrandsRef.current.length > 0 ? activeBrandsRef.current[0].id.toString() : "")
+            brand: isOfertas ? "" : (currentBrand || (activeBrandsRef.current.length > 0 ? activeBrandsRef.current[0].id.toString() : ""))
         });          
 
         if (response2.data && response2.data.length) {
@@ -1164,6 +1174,14 @@ function Home() {
                             </button>
                         );
                     })}
+                    <button
+                        type="button"
+                        className={`homeMobileBrandsNav_tab homeMobileBrandsNav_tab--ofertas ${brandIdRef.current === OFERTAS_BRAND_ID ? "homeMobileBrandsNav_tab--ofertas-active" : ""}`}
+                        onClick={() => handleBrandTabSelect(OFERTAS_BRAND_ID)}
+                        aria-current={brandIdRef.current === OFERTAS_BRAND_ID ? "true" : undefined}
+                    >
+                        OFERTAS
+                    </button>
                 </nav>
             )}
 
