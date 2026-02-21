@@ -630,6 +630,16 @@
     margin-right: 0.5rem;
 }
 
+/* Mobile-only Ordenar in top row: hidden on desktop */
+.homePageOrderMobile {
+    display: none;
+}
+
+/* Bottom reset button inside filter panel: hidden on desktop */
+.filterResetBottomBtn {
+    display: none;
+}
+
 .homePageOrderOptionCont {
     position: relative;
     border-color: var(--color-borders-light-gray);
@@ -1076,12 +1086,18 @@
     .homePageFiltersCont {
         height: fit-content;
         flex-direction: column;
-        padding: 1rem 12px;  /* Compact padding */
+        padding: 0.5rem 16px;
+    }
+
+    .homePageFiltersInternalCont {
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .homePageOrderCont {
         flex-direction: column;
         padding-left: 0;
+        margin-bottom: 0;
     }
 
     /* Brand + Search on same row, full width */
@@ -1090,21 +1106,21 @@
         width: 100%;
         min-width: unset;
         border-right: none;
-        flex-wrap: nowrap;  /* Keep on same row */
+        flex-wrap: nowrap;
         align-items: center;
-        padding: 0 12px;  /* Horizontal padding */
+        padding: 0;
     }
 
     /* Show mobile brands nav on portrait - STICKY */
     .homeMobileBrandsNav {
         display: flex;
         position: sticky;
-        top: var(--navbar-height);  /* Below the header */
-        z-index: 90;  /* Above content, below modals */
-        background-color: #f5f5f5;  /* Solid background for sticky */
+        top: var(--navbar-height);
+        z-index: 90;
+        background-color: #f5f5f5;
     }
 
-    /* Hide MARCA label on mobile, show only logo + search on same row */
+    /* Brand badge: left-aligned, 24px gap to search */
     .homePageBrandBadge {
         flex-direction: row;
         width: auto;
@@ -1113,41 +1129,82 @@
         justify-content: flex-start;
         gap: 0;
         padding: 0;
-        padding-right: 8px;
+        margin-right: 24px;
         margin-bottom: 0;
-        border-right: 1px solid var(--color-borders-light-gray);
+        border-right: none;
         border-bottom: none;
     }
 
     .homePageBrandBadge_label {
-        display: none;  /* Hide MARCA label on mobile */
+        display: none;
     }
 
     .homePageBrandBadge_logo {
         height: 1.25rem;
     }
 
+    /* Search input: fill remaining width */
     .homePageFinderCont {
         flex: 1;
-        margin-left: 8px;
+        min-width: 0;
+        margin-left: 0;
     }
 
+    /* Buttons: side-by-side, equal width, 12px gap */
     .homePageFilterCont {
         width: 100%;
         padding: 0;
         border-right: none;
         border-left: none;
-        margin: 0.75rem 0;  /* Reduced margin for compact layout */
-    }   
-
-    .homePageFilterCont div:first-child {
-        margin-left: 0;
-        margin-bottom: 0;
+        margin: 0.75rem 0;
+        flex-direction: row;
+        gap: 12px;
     }
 
-    .homePageFilterCont div:last-child {
-        margin-right: 0;
-        margin-bottom: 0;
+    .homePageFilterOptionCont {
+        flex: 1;
+        min-width: 0;
+        height: 2.25rem;
+        border-radius: 1.25rem;
+        margin: 0;
+        justify-content: center;
+    }
+
+    /* Hide top Resetear on mobile */
+    .homePageFilterResetTop {
+        display: none;
+    }
+
+    /* Show mobile Ordenar in top row */
+    .homePageOrderMobile {
+        display: flex;
+    }
+
+    /* Hide desktop Ordenar section on mobile */
+    .homePageOrderDesktop {
+        display: none;
+    }
+
+    /* Bottom reset button inside filter panel */
+    .filterResetBottomBtn {
+        display: block;
+        width: 100%;
+        padding: 10px 16px;
+        margin-top: 12px;
+        background: none;
+        border: 1px solid var(--color-borders-light-gray);
+        border-radius: 4px;
+        font-family: var(--font-style-medium);
+        font-size: 14px;
+        color: var(--text-gray-color-2);
+        cursor: pointer;
+        text-align: center;
+        transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .filterResetBottomBtn:hover {
+        border-color: var(--color-web-1);
+        color: var(--color-web-1);
     }
 
     .homePageOrderText {
@@ -1160,15 +1217,18 @@
     }
     
     .homePageOrderTextFindedQuantity {
-        margin-top: 0.75rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0;
         margin-left: 0;
     }
 
-    .homePageFilterOptionCont {
-        width: 100%;
-        height: 1.5rem;
-        border-radius: 1.25rem;
+    .homePagesIndexContainer--spacer {
+        min-height: 0;
+    }
+
+    .homeProductsContainer {
         margin-top: 0;
+        padding-top: 0;
     }
 
     .filterOrderOptionsDropDownCont {
@@ -1317,7 +1377,7 @@
         font-size: 14px;
     }
 
-    /* Brand + Search on same row */
+    /* Brand badge: left-aligned, 24px gap to search */
     .homePageBrandBadge {
         flex-direction: row;
         width: auto;
@@ -1325,14 +1385,14 @@
         align-items: center;
         gap: 0;
         padding: 0;
-        padding-right: 8px;
+        margin-right: 24px;
         margin-bottom: 0;
-        border-right: 1px solid var(--color-borders-light-gray);
+        border-right: none;
         border-bottom: none;
     }
 
     .homePageBrandBadge_label {
-        display: none;  /* Hide MARCA label on mobile */
+        display: none;
     }
 
     .homePageBrandBadge_logo {
@@ -1341,16 +1401,60 @@
 
     .homePageFinderMainCont {
         flex-wrap: nowrap;
-        padding: 0 12px;
+        padding: 0;
+    }
+
+    .homePageFiltersInternalCont {
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .homePageFinderCont {
         flex: 1;
-        margin-left: 8px;
+        min-width: 0;
+        margin-left: 0;
     }
 
+    /* Buttons: side-by-side, equal width */
     .homePageFilterCont {
         margin: 0.75rem 0;
+        flex-direction: row;
+        gap: 12px;
+    }
+
+    .homePageFilterOptionCont {
+        flex: 1;
+        min-width: 0;
+        height: 2.25rem;
+        margin: 0;
+        justify-content: center;
+    }
+
+    .homePageFilterResetTop {
+        display: none;
+    }
+
+    .homePageOrderMobile {
+        display: flex;
+    }
+
+    .homePageOrderDesktop {
+        display: none;
+    }
+
+    .filterResetBottomBtn {
+        display: block;
+        width: 100%;
+        padding: 10px 16px;
+        margin-top: 12px;
+        background: none;
+        border: 1px solid var(--color-borders-light-gray);
+        border-radius: 4px;
+        font-family: var(--font-style-medium);
+        font-size: 14px;
+        color: var(--text-gray-color-2);
+        cursor: pointer;
+        text-align: center;
     }
 
     .homePageOrderText {
@@ -1358,10 +1462,20 @@
     }
 
     .homePageOrderTextFindedQuantity {
-        margin-top: 0.75rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0;
+    }
+
+    .homePagesIndexContainer--spacer {
+        min-height: 0;
+    }
+
+    .homeProductsContainer {
+        margin-top: 0;
+        padding-top: 0;
     }
 
     .homePageFiltersCont {
-        padding: 1rem 12px;
+        padding: 0.5rem 16px;
     }
 }
