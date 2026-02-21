@@ -1054,6 +1054,20 @@ function Home() {
         navigate("/home");
     };
 
+    const resetFiltersAndClose = () => {
+        resetFilters();
+        const filtersShownCont = document.querySelector(".filtersShownCont") as HTMLDivElement;
+        if (filtersShownCont && filtersShownCont.style.maxHeight !== "0px" && filtersShownCont.style.maxHeight) {
+            filtersShownCont.style.maxHeight = "0px";
+            filtersStatus.current.filtersOpen = false;
+            localStorage.setItem("filtersStatus", JSON.stringify(filtersStatus.current));
+            const homePageFilterOptionTextOpen = document.querySelector(".homePageFilterOptionText[role='open']");
+            if (homePageFilterOptionTextOpen) homePageFilterOptionTextOpen.classList.remove("displayNone");
+            const homePageFilterOptionTextClose = document.querySelector(".homePageFilterOptionText[role='close']");
+            if (homePageFilterOptionTextClose) homePageFilterOptionTextClose.classList.add("displayNone");
+        }
+    };
+
     const adjustFilters = () => {                                                                           //Logica para que no se oculten parte de los filtros si hacemos un resize
         const filtersShownCont = document.querySelector(".filtersShownCont") as HTMLDivElement;             // y tenemos un max-height seteado
         if (filtersShownCont.style.maxHeight !== "0px" && filtersShownCont.style.maxHeight) {               //Si el dropdown está abierto....
@@ -1220,13 +1234,25 @@ function Home() {
                             <p className="homePageFilterOptionText" role="open">Ver Filtros</p>
                             <p className="homePageFilterOptionText displayNone" role="close">Cerrar Filtros</p>
                         </div>
-                        <div className="homePageFilterOptionCont homePageFilterOptionContToGreenTransition flex" onClick={resetFilters}>
+                        <div className="homePageFilterOptionCont homePageFilterOptionContToGreenTransition homePageFilterResetTop flex" onClick={resetFilters}>
                             <img src="/images/icons/filter.png" alt="Filtros" className="homePageFilterOptionIcon" />
                             <p className="homePageFilterOptionText">Resetear</p>
                         </div>
+                        {/* Ordenar - visible only on mobile, replaces Resetear in top row */}
+                        <div className="homePageFilterOptionCont homePageOrderOptionCont homePageOrderMobile flex" onClick={handleShowDropDown}>
+                            <p className="homePageFilterOptionText homePageOrderOptionText">Ordenar</p>
+                            <img src="/images/icons/order.png" alt="Ordenar" className="homePageFilterOptionIcon homePageOrderOptionIcon" />
+                            <div className="filterOrderOptionsDropDownCont displayNone dropDownAnimation1_in flex column">
+                                <p className="filterOrderOptionsDropDowSelected" onClick={() => orderResultsBy("default")} role="default">Por defecto</p>
+                                <p onClick={() => orderResultsBy("alphabetic")} role="alphabetic">Alfabéticamente</p>
+                                <p onClick={() => orderResultsBy("price_asc")} role="price_asc">Menor Precio a Mayor Precio</p>
+                                <p onClick={() => orderResultsBy("price_desc")} role="price_desc">Mayor Precio a Menor Precio</p>
+                                <p onClick={() => orderResultsBy("date")} role="date">Fecha de Subida</p>
+                            </div>
+                        </div>
                     </div>
                     <div className="homePageOrderCont flex">
-                        <div className="homePageFilterOptionCont homePageOrderOptionCont flex" onClick={handleShowDropDown}>
+                        <div className="homePageFilterOptionCont homePageOrderOptionCont homePageOrderDesktop flex" onClick={handleShowDropDown}>
                             <p className="homePageFilterOptionText homePageOrderOptionText">Ordenar</p>
                             <img src="/images/icons/order.png" alt="Filtros" className="homePageFilterOptionIcon homePageOrderOptionIcon" />
 
@@ -1309,6 +1335,10 @@ function Home() {
                             </button>
                         </div>
                     </div>
+                    {/* Reset button inside filter panel - mobile only */}
+                    <button className="filterResetBottomBtn" onClick={resetFiltersAndClose}>
+                        Resetear filtros
+                    </button>
                 </div>
             </div>
 
