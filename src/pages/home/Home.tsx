@@ -1312,26 +1312,7 @@ function Home() {
                 </div>
             </div>
 
-            {/* Productos y paginación - wrapper always rendered for consistent spacing */}
-            <div className={`homePagesIndexContainer flex ${productsFound === 0 ? "homePagesIndexContainer--empty" : ""}`}>
-                {productsFound !== 0 && (
-                    <>
-                        <div 
-                            className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                            onClick={ () => navigate(`/home?page=${calculatePreviousPage()}&brand=${getCurrentBrandId()}`) } 
-                        >
-                            ‹ 
-                        </div>
-                        {pagesIndex}
-                        <div 
-                            className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                            onClick={ () => navigate(`/home?page=${calculateNextPage()}&brand=${getCurrentBrandId()}`) } 
-                        > 
-                            › 
-                        </div>
-                    </>
-                )}
-            </div>
+            <div className="homePagesIndexContainer homePagesIndexContainer--spacer" />
             <div className="homeProductsContainer flex wrap">
                 {isFilterLoading || products === null ? renderSkeletons() : products}
             </div>

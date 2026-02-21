@@ -17,14 +17,16 @@
 .homePagesIndexContainer {
     width: 100%;
     margin: 1rem 0;
-    min-height: 2rem;  /* Consistent height even when empty */
+    min-height: 2rem;
     background-color: var(--bg-color-1);
 }
 
-.homePagesIndexContainer--empty {
-    /* Maintain spacing when no pagination controls */
-    min-height: 1rem;
+.homePagesIndexContainer--spacer {
+    margin: 0;
+    min-height: var(--homeCards-gap);
+    background-color: transparent;
 }
+
 
 .homeNumberOfPage {
     margin: 0 0.15rem;
