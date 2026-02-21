@@ -103,6 +103,14 @@
     text-align: left;
 }
 
+.productDetails_priceOriginal {
+    text-decoration: line-through;
+    color: var(--text-gray-color);
+    font-size: 14px;
+    font-family: var(--font-style-medium);
+    margin-right: 0.5rem;
+}
+
 .productDetails_article {
     padding-top: 1rem;
     font-family: var(--font-style-bold);

@@ -70,6 +70,13 @@
     font-family: var(--font-style-bold);
 }
 
+.productDetailsPortrait_priceOriginal {
+    text-decoration: line-through;
+    color: var(--text-gray-color);
+    font-size: 13px;
+    font-family: var(--font-style-medium);
+}
+
 .productDetailsPortrait_download, .productDetailsPortrait_ws {
     height: 100%;
     aspect-ratio: 1/1;

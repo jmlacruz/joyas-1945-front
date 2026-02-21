@@ -13,11 +13,10 @@ export const formatDecimalPrice = (price: number, decimals = 2): string => {
  * @returns El precio formateado con símbolo de moneda
  */
 export const formatCurrencyPrice = (price: number, currency: "USD" | "ARS"): string => {
-    if (price === null || price === undefined || isNaN(price)) return currency === "USD" ? "US$ 0.00" : "$ 0";
+    if (price === null || price === undefined || isNaN(price)) return currency === "USD" ? "u$s 0.00" : "$ 0";
 
     if (currency === "USD") {
-        // Formato dólares: US$ 1,234.56
-        return `US$ ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `u$s ${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     } else {
         // Formato pesos argentinos: $ 1.234 (sin decimales, separador de miles con punto)
         return `$ ${price.toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
