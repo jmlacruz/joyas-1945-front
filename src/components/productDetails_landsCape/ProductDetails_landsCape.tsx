@@ -169,7 +169,12 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
                     <div className="productDetails_mainDescriptionCont flex column">
                         <h2 className="productDetails_descriptionText">{productData? productData.nombre : ""}</h2>
                         <p className="productDetails_clothText">Paños: <span>{pano}</span></p>
-                        <p className="productDetails_price">{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</p>
+                        <div className="productDetails_price">
+                            {productData?.con_descuento && productData.precio_full != null && (
+                                <span className="productDetails_priceOriginal">{formatCurrencyPrice(productData.precio_full, "USD")}</span>
+                            )}
+                            <span>{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</span>
+                        </div>
                         <p className="productDetails_article">Artículo: <span>{productData? productData.codigo : ""}</span> </p>
                         <p className="productDetails_quantityText">CANTIDAD</p>
                         <div className="productDetails_buttonsCont flex">

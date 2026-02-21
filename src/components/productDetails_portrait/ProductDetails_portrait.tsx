@@ -237,7 +237,12 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
                 <div className="productDetailsPortrait_download flex" onClick={() => downloadImage(imageToDownloadSrc)}>
                     <img src="/images/icons/downloadImage.png" alt="Descargar Imagen" />
                 </div>
-                <div className="productDetailsPortrait_price flex">{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</div>
+                <div className="productDetailsPortrait_price flex column">
+                    {productData?.con_descuento && productData.precio_full != null && (
+                        <span className="productDetailsPortrait_priceOriginal">{formatCurrencyPrice(productData.precio_full, "USD")}</span>
+                    )}
+                    <span>{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</span>
+                </div>
                 <div className="productDetailsPortrait_ws flex">
                     <img src="/images/icons/ws.png" alt="WhatsApp" />
                 </div>
