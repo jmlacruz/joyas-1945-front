@@ -22,6 +22,164 @@ const useQuery = () => new URLSearchParams(useLocation().search);               
 
 const OFERTAS_BRAND_ID = "ofertas";
 
+const MOBILE_MQ = "(max-width: 768px), (orientation: portrait)";
+
+type CarouselItem = { id: string; label: string; isOfertas: boolean };
+
+function easeInOutCubic(t: number): number {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function MobileBrandsCarousel({ brands, activeBrandId, onSelect }: {
+    brands: Marca[];
+    activeBrandId: string;
+    onSelect: (id: string) => void;
+}) {
+    const navRef = useRef<HTMLElement>(null);
+    const isAdjustingRef = useRef(false);
+    const hasPlayedIntroRef = useRef(false);
+    const introAnimatingRef = useRef(false);
+
+    const items: CarouselItem[] = [
+        ...brands.map(b => ({ id: b.id.toString(), label: b.descripcion, isOfertas: false })),
+        { id: OFERTAS_BRAND_ID, label: "OFERTAS", isOfertas: true },
+    ];
+
+    const centerItem = (container: HTMLElement, itemId: string, smooth: boolean) => {
+        const el = container.querySelector(`[data-item-id="${itemId}"][data-dup-index="1"]`) as HTMLElement | null;
+        if (!el) return;
+        const target = el.offsetLeft + el.offsetWidth / 2 - container.clientWidth / 2;
+        container.scrollTo({ left: target, behavior: smooth ? "smooth" : "auto" });
+    };
+
+    const wrapScroll = (nav: HTMLElement) => {
+        const seg = nav.scrollWidth / 3;
+        if (nav.scrollLeft < 1) {
+            nav.scrollLeft += seg;
+        } else if (nav.scrollLeft >= seg * 2 - nav.clientWidth) {
+            nav.scrollLeft -= seg;
+        }
+    };
+
+    // 360 intro animation (one full loop via rAF easing)
+    const playIntro = (nav: HTMLElement, onDone: () => void) => {
+        const seg = nav.scrollWidth / 3;
+        const startLeft = nav.scrollLeft;
+        const distance = seg; // scroll exactly one full segment (all items once)
+        const duration = 1200;
+        let startTime: number | null = null;
+        introAnimatingRef.current = true;
+
+        const step = (timestamp: number) => {
+            if (!startTime) startTime = timestamp;
+            const elapsed = timestamp - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const easedProgress = easeInOutCubic(progress);
+
+            nav.scrollLeft = startLeft + distance * easedProgress;
+            wrapScroll(nav);
+
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                introAnimatingRef.current = false;
+                onDone();
+            }
+        };
+        requestAnimationFrame(step);
+    };
+
+    // Mount: position + intro or just center
+    useEffect(() => {
+        const nav = navRef.current;
+        if (!nav || !window.matchMedia(MOBILE_MQ).matches) return;
+        if (hasPlayedIntroRef.current) return;
+        hasPlayedIntroRef.current = true;
+
+        const seg = nav.scrollWidth / 3;
+        nav.scrollLeft = seg; // jump to middle segment
+
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (prefersReducedMotion) {
+            centerItem(nav, activeBrandId, false);
+            return;
+        }
+
+        // Start intro after layout settles
+        const timer = setTimeout(() => {
+            playIntro(nav, () => {
+                centerItem(nav, activeBrandId, true);
+            });
+        }, 150);
+
+        return () => { clearTimeout(timer); introAnimatingRef.current = false; };
+    }, [brands.length]);
+
+    // Center on active item change (user tap)
+    useEffect(() => {
+        const nav = navRef.current;
+        if (!nav || !window.matchMedia(MOBILE_MQ).matches) return;
+        if (introAnimatingRef.current) return; // don't fight the intro
+        centerItem(nav, activeBrandId, true);
+    }, [activeBrandId]);
+
+    // Infinite scroll loop handler
+    useEffect(() => {
+        const nav = navRef.current;
+        if (!nav || !window.matchMedia(MOBILE_MQ).matches) return;
+
+        let ticking = false;
+        const handleScroll = () => {
+            if (ticking || isAdjustingRef.current || introAnimatingRef.current) return;
+            ticking = true;
+            requestAnimationFrame(() => {
+                ticking = false;
+                if (!nav || isAdjustingRef.current) return;
+                const seg = nav.scrollWidth / 3;
+                const threshold = 20;
+                if (nav.scrollLeft < threshold) {
+                    isAdjustingRef.current = true;
+                    nav.scrollLeft += seg;
+                    isAdjustingRef.current = false;
+                } else if (nav.scrollLeft > seg * 2 - nav.clientWidth + threshold) {
+                    isAdjustingRef.current = true;
+                    nav.scrollLeft -= seg;
+                    isAdjustingRef.current = false;
+                }
+            });
+        };
+
+        nav.addEventListener("scroll", handleScroll, { passive: true });
+        return () => nav.removeEventListener("scroll", handleScroll);
+    }, [brands.length]);
+
+    const renderItem = (item: CarouselItem, dupIndex: number) => {
+        const isActive = item.id === activeBrandId;
+        const cls = item.isOfertas
+            ? `homeMobileBrandsNav_tab homeMobileBrandsNav_tab--ofertas${isActive ? " homeMobileBrandsNav_tab--ofertas-active" : ""}`
+            : `homeMobileBrandsNav_tab${isActive ? " homeMobileBrandsNav_tab--active" : ""}`;
+        return (
+            <button
+                key={`${dupIndex}-${item.id}`}
+                type="button"
+                className={cls}
+                data-item-id={item.id}
+                data-dup-index={dupIndex}
+                onClick={() => onSelect(item.id)}
+                aria-current={isActive && dupIndex === 1 ? "true" : undefined}
+            >
+                {item.label}
+            </button>
+        );
+    };
+
+    return (
+        <nav ref={navRef} className="homeMobileBrandsNav" aria-label="Navegación de marcas">
+            {[0, 1, 2].map(dupIndex => items.map(item => renderItem(item, dupIndex)))}
+        </nav>
+    );
+}
+
 function Home() {
 
     const firstTime = useRef(true);
@@ -1171,32 +1329,13 @@ function Home() {
                 <img src={bgBrandImageSrc} alt="" className="homePageBrandSelectImg"/>
             </div>
 
-            {/* Mobile Brands Navigation - visible only on mobile */}
+            {/* Mobile Brands Navigation - infinite carousel, visible only on mobile */}
             {activeBrandsState.length > 0 && (
-                <nav className="homeMobileBrandsNav" aria-label="Navegación de marcas">
-                    {activeBrandsState.map((brand) => {
-                        const isActive = brand.id.toString() === brandIdRef.current;
-                        return (
-                            <button
-                                key={brand.id}
-                                type="button"
-                                className={`homeMobileBrandsNav_tab ${isActive ? "homeMobileBrandsNav_tab--active" : ""}`}
-                                onClick={() => handleBrandTabSelect(brand.id.toString())}
-                                aria-current={isActive ? "true" : undefined}
-                            >
-                                {brand.descripcion}
-                            </button>
-                        );
-                    })}
-                    <button
-                        type="button"
-                        className={`homeMobileBrandsNav_tab homeMobileBrandsNav_tab--ofertas ${brandIdRef.current === OFERTAS_BRAND_ID ? "homeMobileBrandsNav_tab--ofertas-active" : ""}`}
-                        onClick={() => handleBrandTabSelect(OFERTAS_BRAND_ID)}
-                        aria-current={brandIdRef.current === OFERTAS_BRAND_ID ? "true" : undefined}
-                    >
-                        OFERTAS
-                    </button>
-                </nav>
+                <MobileBrandsCarousel
+                    brands={activeBrandsState}
+                    activeBrandId={brandIdRef.current}
+                    onSelect={handleBrandTabSelect}
+                />
             )}
 
             <div className="homePageFiltersCont flex">                                                         {/* Ventana principal de filtros */}   
