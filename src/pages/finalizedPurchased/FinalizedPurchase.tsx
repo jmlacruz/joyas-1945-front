@@ -57,7 +57,7 @@ const FinalizedPurchase = () => {
                 {bankDataJSX}
                 <div className="finalizedPurchase_line"></div>
                 <p className="finalizedPurchase_text">En menos de 24hs se va a estar contactando nuestro staff para afinar los detalles de la solicitud.</p>
-                <Link to="/home">
+                <Link to="/home" className="finalizedPurchase_seguirComprandoLink">
                     <CustomButton2 text="PUEDES SEGUIR COMPRANDO" styles={{marginTop: "2rem"}}/>
                 </Link>
             </div>
