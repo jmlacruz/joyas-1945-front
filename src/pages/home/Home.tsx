@@ -1490,25 +1490,6 @@ function Home() {
             <div className="filtersShownCont">                                                                 {/* Ventana de tipo de productos y filtrado por rango de precios */}
                 <div className="filtersShownIntCont">
                     <div className="filtersShownInt2Cont flex wrap">
-                        <div className="filtersCurrencyToggleCont filtersShownInternalCont flex">
-                            <span className="visuallyHidden" aria-hidden="true">Moneda</span>
-                            <div className="homePageCurrencyToggleCont flex" role="group" aria-label="Seleccionar moneda">
-                                <button
-                                    className={`currencyToggleOption ${currencyIsUsd ? "active" : ""}`}
-                                    aria-pressed={currencyIsUsd}
-                                    onClick={() => handleCurrencyToggle(true)}
-                                >
-                                    USD
-                                </button>
-                                <button
-                                    className={`currencyToggleOption ${!currencyIsUsd ? "active" : ""}`}
-                                    aria-pressed={!currencyIsUsd}
-                                    onClick={() => handleCurrencyToggle(false)}
-                                >
-                                    ARS
-                                </button>
-                            </div>
-                        </div>
                         <div className="filtersShownTypesCont filtersShownInternalCont flex">
                             <p className="filtersShownTitle">Tipo</p>
                             <div className="filtersShownTypes flex" role="group" aria-label="Filtrar por tipo">
@@ -1529,28 +1510,51 @@ function Home() {
                                 })}
                             </div>
                         </div>
-                        <div className="filtersPriceRangeCont filtersShownInternalCont flex">
-                            <p className="filterPriceRangeTitle">PRECIO</p>
-                            <div className="filterPriceInputsCont flex">
-                                <input 
-                                    type="number" 
-                                    className="filterPriceInput filterPriceInputMin" 
-                                    ref={priceMinRef}
-                                    placeholder="min"
-                                    defaultValue={filterState.priceRange ? filterState.priceRange[0] : ""} 
-                                />
-                                <span className="filterPriceInputSeparator">-</span>
-                                <input 
-                                    type="number" 
-                                    className="filterPriceInput filterPriceInputMax" 
-                                    ref={priceMaxRef}
-                                    placeholder="max"
-                                    defaultValue={filterState.priceRange ? filterState.priceRange[1] : ""} 
-                                />
+                        <div className="filtersCurrencyPriceRow">
+                            <div className="filtersCurrencyCol">
+                                <div className="filtersCurrencyToggleCont filtersShownInternalCont flex">
+                                    <span className="visuallyHidden" aria-hidden="true">Moneda</span>
+                                    <div className="homePageCurrencyToggleCont flex" role="group" aria-label="Seleccionar moneda">
+                                        <button
+                                            className={`currencyToggleOption ${currencyIsUsd ? "active" : ""}`}
+                                            aria-pressed={currencyIsUsd}
+                                            onClick={() => handleCurrencyToggle(true)}
+                                        >
+                                            USD
+                                        </button>
+                                        <button
+                                            className={`currencyToggleOption ${!currencyIsUsd ? "active" : ""}`}
+                                            aria-pressed={!currencyIsUsd}
+                                            onClick={() => handleCurrencyToggle(false)}
+                                        >
+                                            ARS
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <button className="filterButton" onClick={() => searchByCategorieAndPriceRange()} disabled={isFilterLoading}>
-                                {isFilterLoading ? <span className="filterButtonLoader"></span> : "Filtrar"}
-                            </button>
+                            <div className="filtersPriceCol">
+                                <p className="filterPriceRangeTitle">PRECIO</p>
+                                <div className="filterInputRow flex">
+                                    <input 
+                                        type="number" 
+                                        className="filterPriceInput filterPriceInputMin" 
+                                        ref={priceMinRef}
+                                        placeholder="min"
+                                        defaultValue={filterState.priceRange ? filterState.priceRange[0] : ""} 
+                                    />
+                                    <span className="filterPriceInputSeparator">-</span>
+                                    <input 
+                                        type="number" 
+                                        className="filterPriceInput filterPriceInputMax" 
+                                        ref={priceMaxRef}
+                                        placeholder="max"
+                                        defaultValue={filterState.priceRange ? filterState.priceRange[1] : ""} 
+                                    />
+                                    <button className="filterButton" onClick={() => searchByCategorieAndPriceRange()} disabled={isFilterLoading}>
+                                        {isFilterLoading ? <span className="filterButtonLoader"></span> : "Filtrar"}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {/* Reset button inside filter panel - mobile only */}
