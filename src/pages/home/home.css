@@ -82,9 +82,6 @@
     animation: homeSwipeHintFade 0.45s ease-out forwards;
 }
 
-.homeSwipeHint--next { }
-.homeSwipeHint--prev { }
-
 @keyframes homeSwipeHintFade {
     0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
     20% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
@@ -607,7 +604,8 @@
         margin-left: 3px;
     }
 
-    .filtersPriceRangeCont {
+    .filtersPriceRangeCont,
+    .filtersPriceCol {
         padding-left: 0.3rem;
         gap: 3px;
         flex-shrink: 1;  /* Allow price section to shrink */
@@ -661,10 +659,18 @@
         font-size: 11px;
     }
 
-    .filtersPriceRangeCont {
+    .filtersPriceRangeCont,
+    .filtersPriceCol {
         padding-left: 4px;
         gap: 3px;
     }
+}
+
+/* Desktop: preserve original order Currency | Tipo | Price */
+@media (min-width: 769px) {
+    .filtersCurrencyCol { order: 1; }
+    .filtersShownTypesCont { order: 2; }
+    .filtersPriceCol { order: 3; }
 }
 
 .homePageOrderText {
@@ -857,6 +863,33 @@
     white-space: nowrap;
 }
 
+/* Currency+Price row wrapper - display:contents on desktop preserves original layout */
+.filtersCurrencyPriceRow {
+    display: contents;
+}
+
+.filtersCurrencyCol {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+}
+
+.filtersPriceCol {
+    flex: 0 0 auto;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+    white-space: nowrap;
+    padding-left: 1rem;
+}
+
+.filterInputRow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+}
+
 .filterButton {
     border-style: none;
     background-color: var(--color-web-1);
@@ -893,7 +926,8 @@
     }
 }
 
-.filterPriceInputsCont {
+.filterPriceInputsCont,
+.filterInputRow {
     color: var(--color-borders-light-gray);
 }
 
@@ -1028,9 +1062,9 @@
 
 @media only screen and (orientation: portrait) {
     
-    /* Compact filter panel on mobile */
+    /* Compact filter panel on mobile - reduced vertical space, clear grouping */
     .filtersShownCont {
-        padding: 0.75rem 12px;  /* Compact horizontal padding */
+        padding: 0.5rem 12px;
     }
 
     .filtersShownIntCont {
@@ -1042,85 +1076,123 @@
         padding-left: 0;
         padding-right: 0;
         flex-wrap: wrap;
-        gap: 0.75rem;
-        justify-content: center;  /* Center content */
+        gap: 0.5rem;
+        justify-content: center;
     }
 
-    /* Currency toggle on mobile */
-    .filtersCurrencyToggleCont {
+    .filtersShownInternalCont {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Currency+Price row: currency left, price group right; larger gap to avoid mis-taps */
+    .filtersCurrencyPriceRow {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 20px;  /* Increased from 12px (saved from separator) for touch target separation */
         width: 100%;
-        justify-content: center;
-        padding: 0.5rem 0;
+        order: 2;
+    }
+
+    .filtersCurrencyCol {
+        flex: 0 0 auto;
+    }
+
+    .filtersPriceCol {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding-left: 0;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .filterPriceRangeTitle {
+        display: none;  /* Hide PRECIO title on mobile */
+    }
+
+    /* priceGroup: minMaxGroup + Filtrar; micro-gap around separator */
+    .filterInputRow {
+        display: flex;
+        align-items: center;
+        gap: 2px;  /* Very tight around "-" (<=2px each side) */
+        flex: 1;
+        justify-content: flex-end;
+    }
+
+    .filterInputRow .filterButton {
+        margin-top: 0 !important;
+    }
+
+    .filterPriceInputSeparator {
+        margin: 0;
+        padding: 0;
+        width: auto;
+    }
+
+    /* Inputs: keep 64px (no width increase; saved space went to outer gap) */
+    .filterPriceInput {
+        width: 64px;
+        font-size: 16px;
+        padding: 6px 8px;
+    }
+
+    /* Same height for all controls in the row */
+    .filtersCurrencyPriceRow .currencyToggleOption,
+    .filtersCurrencyPriceRow .filterPriceInput,
+    .filtersCurrencyPriceRow .filterButton {
+        height: 2.25rem;
+        min-height: 2.25rem;
+        box-sizing: border-box;
+    }
+
+    /* Override: currency left-aligned, not full-width centered */
+    .filtersCurrencyToggleCont {
+        width: auto;
+        justify-content: flex-start;
+        padding: 0.25rem 0;
     }
 
     .filtersShownTypesCont {
+        order: 1;
         width: 100%;
         margin-top: 0;
         flex-direction: column;
-        align-items: center;  /* Center on mobile */
+        align-items: center;
         justify-content: center;
     }
 
     .filtersShownTypes {
         flex-wrap: wrap;
-        justify-content: center;  /* Center type options */
-        gap: 0.5rem;
-    }
-         
-    /* Compact price section on mobile */
-    .filtersPriceRangeCont {
-        flex-direction: column;
-        width: 100%;
-        padding: 0;
-        align-items: center;  /* Center on mobile */
         justify-content: center;
-        margin-bottom: 0;
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
-
-    .filterPriceRangeTitle {
-        margin-bottom: 0.25rem;
-        font-size: 14px;
-    }
-
-    .filterPriceInputsCont {
-        width: auto;
-        justify-content: center;
-        gap: 0;
-    }
-
-    .filterPriceInput {
-        width: 70px;
-        font-size: 14px;
-        padding: 6px 8px;
-    }
-
-    .filterPriceInput::placeholder {
-        font-size: 14px;
-    }
-
-    .filterPriceInputSeparator {
-        margin: 0 6px;  /* 12px total gap */
-        font-size: 14px;
-    }
-
     .filterInputCont {
         margin: 0 0.25rem;
         margin-bottom: 0.5rem;
     }
 
+    .filterPriceInput::placeholder {
+        font-size: 16px;
+    }
+
+    .filterPriceInputSeparator {
+        font-size: 16px;
+    }
+
     .filterButton {
-        width: auto;
-        min-width: 80px;
         height: auto;
-        padding: 6px 16px;
+        padding: 6px 14px;
+        font-size: 16px;
+        white-space: nowrap;
         margin-left: 0;
-        margin-top: 0.5rem;
-        font-size: 14px;
+        margin-top: 0;
+        min-width: auto;
     }
 
     .filtersShownTitle {
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.35rem;
         text-align: center;
     }
 
@@ -1230,8 +1302,8 @@
     .filterResetBottomBtn {
         display: block;
         width: 100%;
-        padding: 10px 16px;
-        margin-top: 12px;
+        padding: 8px 16px;
+        margin-top: 8px;
         background: none;
         border: 1px solid var(--color-borders-light-gray);
         border-radius: 4px;
@@ -1326,7 +1398,8 @@
         padding-top: 1rem;
     }
 
-    .filtersPriceRangeCont {
+    .filtersPriceRangeCont,
+    .filtersPriceCol {
         padding-left: 0;
         width: 100%;
         padding-bottom: 1rem;
@@ -1357,75 +1430,130 @@
 
     /* Compact filter panel on mobile */
     .filtersShownCont {
-        padding: 0.75rem 12px;
+        padding: 0.5rem 12px;
     }
 
     .filtersShownInt2Cont {
         padding: 0;
         flex-wrap: wrap;
-        gap: 0.75rem;
+        gap: 0.5rem;
         justify-content: center;
     }
 
-    .filtersCurrencyToggleCont {
+    .filtersShownInternalCont {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Currency+Price row: currency left, price group right; larger gap to avoid mis-taps */
+    .filtersCurrencyPriceRow {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 20px;  /* Increased from 12px (saved from separator) for touch target separation */
         width: 100%;
-        justify-content: center;
-        padding: 0.5rem 0;
+        order: 2;
+    }
+
+    .filtersCurrencyCol {
+        flex: 0 0 auto;
+    }
+
+    .filtersPriceCol {
+        flex: 1 1 auto;
+        min-width: 0;
+        padding-left: 0;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .filterPriceRangeTitle {
+        display: none;  /* Hide PRECIO title on mobile */
+    }
+
+    /* priceGroup: minMaxGroup + Filtrar; micro-gap around separator */
+    .filterInputRow {
+        display: flex;
+        align-items: center;
+        gap: 2px;  /* Very tight around "-" (<=2px each side) */
+        flex: 1;
+        justify-content: flex-end;
+    }
+
+    .filterInputRow .filterButton {
+        margin-top: 0 !important;
+    }
+
+    .filterPriceInputSeparator {
+        margin: 0;
+        padding: 0;
+        width: auto;
+    }
+
+    /* Inputs: keep 64px (no width increase; saved space went to outer gap) */
+    .filterPriceInput {
+        width: 64px;
+        font-size: 16px;
+        padding: 6px 8px;
+    }
+
+    /* Same height for all controls in the row */
+    .filtersCurrencyPriceRow .currencyToggleOption,
+    .filtersCurrencyPriceRow .filterPriceInput,
+    .filtersCurrencyPriceRow .filterButton {
+        height: 2.25rem;
+        min-height: 2.25rem;
+        box-sizing: border-box;
+    }
+
+    .filtersCurrencyToggleCont {
+        width: auto;
+        justify-content: flex-start;
+        padding: 0.25rem 0;
     }
 
     .filtersShownTypesCont {
         width: 100%;
         flex-direction: column;
         align-items: center;
+        order: 1;
     }
 
     .filtersShownTypes {
         flex-wrap: wrap;
         justify-content: center;
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
 
-    .filtersPriceRangeCont {
-        flex-direction: column;
-        width: 100%;
-        padding: 0;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .filterPriceRangeTitle {
-        margin-bottom: 0.25rem;
-        font-size: 14px;
-    }
-
-    .filterPriceInputsCont {
-        width: auto;
-        justify-content: center;
-        gap: 0;
-    }
-
+    /* iOS zoom fix; input width 64px (saved space went to outer gap) */
     .filterPriceInput {
-        width: 70px;
-        font-size: 14px;
+        width: 64px;
+        font-size: 16px;
         padding: 6px 8px;
     }
 
     .filterPriceInput::placeholder {
-        font-size: 14px;
+        font-size: 16px;
     }
 
     .filterPriceInputSeparator {
-        margin: 0 6px;
-        font-size: 14px;
+        font-size: 16px;
     }
 
     .filterButton {
-        width: auto;
-        min-width: 80px;
         height: auto;
-        padding: 6px 16px;
-        margin-top: 0.5rem;
-        font-size: 14px;
+        padding: 6px 14px;
+        font-size: 16px;
+        white-space: nowrap;
+        margin-left: 0;
+        margin-top: 0;
+        min-width: auto;
+    }
+
+    .filtersShownTitle {
+        margin-bottom: 0.35rem;
+        text-align: center;
     }
 
     /* Brand badge: left-aligned, 24px gap to search */
@@ -1496,8 +1624,8 @@
     .filterResetBottomBtn {
         display: block;
         width: 100%;
-        padding: 10px 16px;
-        margin-top: 12px;
+        padding: 8px 16px;
+        margin-top: 8px;
         background: none;
         border: 1px solid var(--color-borders-light-gray);
         border-radius: 4px;
