@@ -52,3 +52,12 @@
 .finalizedPurchase_transferDataFromDB {
     white-space: pre-line;
 }
+
+/* Mobile: center PUEDES SEGUIR COMPRANDO button */
+@media only screen and (max-width: 768px) {
+    .finalizedPurchase_seguirComprandoLink {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+}
