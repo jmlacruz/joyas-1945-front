@@ -32,16 +32,27 @@ function SidePanel({ isOpen, onClose }: SidePanelProps) {
         }
     }, [isOpen, isVisible]);
 
-    // Handle body scroll lock - separate effect for clean lifecycle
+    // Handle body scroll lock + scrollbar compensation to prevent layout shift
     useEffect(() => {
         if (isOpen) {
-            // Store original value and lock scroll
+            const scrollY = window.scrollY;
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
             const originalOverflow = document.body.style.overflow;
+            const originalPaddingRight = document.body.style.paddingRight;
+
             document.body.style.overflow = "hidden";
-            
-            // Cleanup: always restore on unmount or when isOpen becomes false
+            if (scrollbarWidth > 0) {
+                document.body.style.paddingRight = `${scrollbarWidth}px`;
+                document.body.style.setProperty("--scrollbar-compensation", `${scrollbarWidth}px`);
+                document.body.classList.add("sidePanel-open");
+            }
+
             return () => {
                 document.body.style.overflow = originalOverflow;
+                document.body.style.paddingRight = originalPaddingRight;
+                document.body.style.removeProperty("--scrollbar-compensation");
+                document.body.classList.remove("sidePanel-open");
+                window.scrollTo(0, scrollY);
             };
         }
     }, [isOpen]);

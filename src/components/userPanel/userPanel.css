@@ -77,11 +77,11 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    background-color: #f5f5f5;
+    background-color: white;
     margin-left: 1rem;
     padding-left: 1.25rem;
     padding-right: 1.25rem;
-    border-left: 1px solid #d9d9d9;
+    border-left: 1px solid #e5e5e5;
     box-sizing: border-box;
 }
 
