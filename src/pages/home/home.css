@@ -51,6 +51,47 @@
     color: var(--text-gray-color-2)
 }
 
+/* Mobile-only top pagination indicator */
+.homePaginationTopMobile {
+    display: none;
+    width: 100%;
+    justify-content: center;
+    padding: 0.5rem 0;
+    font-size: 13px;
+    font-family: var(--font-style-medium);
+    color: var(--text-gray-color-2);
+}
+
+.homePaginationTopMobile_label {
+    white-space: nowrap;
+}
+
+/* Swipe hint overlay - mobile only, transient */
+.homeSwipeHint {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5rem;
+    font-family: var(--font-style-bold);
+    color: var(--color-web-1);
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: 500;
+    animation: homeSwipeHintFade 0.45s ease-out forwards;
+}
+
+.homeSwipeHint--next { }
+.homeSwipeHint--prev { }
+
+@keyframes homeSwipeHintFade {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    20% { opacity: 0.85; transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 0.85; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
 /******************************* Sección de selección de marca ***************************************/
 
 .homePageBrandSelectCont {
@@ -1302,6 +1343,16 @@
         top: var(--navbar-height);
         z-index: 90;
         background-color: #f5f5f5;  /* Solid background for sticky */
+    }
+
+    /* Top pagination indicator - mobile only */
+    .homePaginationTopMobile {
+        display: flex;
+    }
+
+    /* Swipe hint overlay - mobile only */
+    .homeSwipeHint {
+        display: block;
     }
 
     /* Compact filter panel on mobile */

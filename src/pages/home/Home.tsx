@@ -331,6 +331,8 @@ function Home() {
         filtersOpen: false
     });
     const scrollPositionRef = useRef<number>(0);
+    const preserveScrollOnPageChangeRef = useRef(false);
+    const [swipeHint, setSwipeHint] = useState<"next" | "prev" | null>(null);
     const [modalProductID, setModalProductID] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isFilterLoading, setIsFilterLoading] = useState(false);
@@ -656,7 +658,10 @@ function Home() {
     };
     
     useEffect(() => {
-        // Solo hacer scroll hacia arriba al cambiar de página, no en la carga inicial
+        if (preserveScrollOnPageChangeRef.current) {
+            preserveScrollOnPageChangeRef.current = false;
+            return;
+        }
         if (!firstTime.current) {
             window.scrollTo({top: 0, behavior: "smooth"});
         }
@@ -1124,10 +1129,20 @@ function Home() {
 
             if (dx < 0) {
                 const next = calculateNextPage();
-                if (next !== pageNumberFromQuery) navigate(buildHomeUrl(next));
+                if (next !== pageNumberFromQuery && !isFilterLoading) {
+                    saveScrollPosition();
+                    preserveScrollOnPageChangeRef.current = true;
+                    setSwipeHint("next");
+                    navigate(buildHomeUrl(next));
+                }
             } else {
                 const prev = calculatePreviousPage();
-                if (prev !== pageNumberFromQuery) navigate(buildHomeUrl(prev));
+                if (prev !== pageNumberFromQuery && !isFilterLoading) {
+                    saveScrollPosition();
+                    preserveScrollOnPageChangeRef.current = true;
+                    setSwipeHint("prev");
+                    navigate(buildHomeUrl(prev));
+                }
             }
         };
 
@@ -1137,7 +1152,14 @@ function Home() {
             grid.removeEventListener("touchstart", onTouchStart);
             grid.removeEventListener("touchend", onTouchEnd);
         };
-    }, [pageNumberFromQuery, orderBy]);
+    }, [pageNumberFromQuery, orderBy, isFilterLoading]);
+
+    // Clear swipe hint after brief display
+    useEffect(() => {
+        if (!swipeHint) return;
+        const t = setTimeout(() => setSwipeHint(null), 450);
+        return () => clearTimeout(t);
+    }, [swipeHint]);
 
     /*************************** Sanitización de valores de rango de precio **************************/
 
@@ -1539,9 +1561,23 @@ function Home() {
             </div>
 
             <div className="homePagesIndexContainer homePagesIndexContainer--spacer" />
+            {/* Mobile-only top pagination indicator */}
+            {productsFound !== 0 && (
+                <div className="homePaginationTopMobile flex">
+                    <span className="homePaginationTopMobile_label">
+                        Página {pageNumberFromQuery} de {quantityOfPages.current || 1}
+                    </span>
+                </div>
+            )}
             <div ref={productsGridRef} className="homeProductsContainer flex wrap">
                 {isFilterLoading || products === null ? renderSkeletons() : products}
             </div>
+            {/* Swipe hint overlay - mobile only */}
+            {swipeHint && (
+                <div className={`homeSwipeHint homeSwipeHint--${swipeHint}`} aria-hidden="true">
+                    {swipeHint === "next" ? "»»" : "««"}
+                </div>
+            )}
             {
                 productsFound !== 0 &&
                 <div className="homePagesIndexContainer flex">
