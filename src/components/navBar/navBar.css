@@ -1,17 +1,22 @@
 .contMenu {
     position: fixed;
-    width: 100%;                                    /* Use 100% instead of 100vw to avoid scrollbar shift */
+    width: 100%;
     height: var(--navbar-height);
     top: 0;
     left: 0;
-    right: 0;                                       /* Ensure full width without scrollbar issues */
+    right: 0;
     z-index: 1000;
     --options-padding: 0.65rem;
-    --navbar-edge-padding: 2.5rem;                  /* Symmetric edge padding for simplified navbar */
+    --navbar-edge-padding: 2.5rem;
     background-color: white;
     justify-content: center;
     box-sizing: border-box;
     box-shadow: 0px 7px 28px -11px rgba(0, 0, 0, 0.075);
+}
+
+/* Scrollbar compensation when side panel is open - prevents header layout shift */
+body.sidePanel-open .contMenu {
+    padding-right: var(--scrollbar-compensation, 0);
 }
 
 /* Simplified navbar: logo left, brand tabs center, user panel right */
@@ -32,15 +37,15 @@
 
 .navBar_brandTabs {
     display: flex;
-    align-items: stretch;  /* Tabs stretch to full height */
+    align-items: stretch;
     justify-content: center;
-    flex: 1;
-    gap: 0;
+    flex: 1 1 auto;
+    min-width: 0;
     height: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;  /* Firefox */
-    background-color: #f0f0f0;  /* Slightly darker gray */
+    background-color: #f0f0f0;
     margin: 0 1rem;
 }
 
