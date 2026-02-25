@@ -250,6 +250,23 @@ function Home() {
         return brandIdRef.current || brandIdFromQuery || "";
     };
 
+    function buildHomeUrl(page: number, opts?: { searchWords?: string[]; categories?: number[]; priceRange?: [number, number] | null; orderBy?: FilterOrderByTypes }) {
+        const o = opts ?? {};
+        const has = (k: string) => Object.prototype.hasOwnProperty.call(o, k);
+        const sw = has("searchWords") ? (o.searchWords ?? []) : filterState.searchWords;
+        const cat = has("categories") ? (o.categories ?? []) : (selectedCategories.length ? selectedCategories : filterState.categories);
+        const pr = has("priceRange") ? (o.priceRange ?? null) : filterState.priceRange;
+        const ord = has("orderBy") ? (o.orderBy ?? "default") : orderBy;
+        const params = new URLSearchParams();
+        params.set("page", String(page));
+        params.set("brand", getCurrentBrandId());
+        params.set("searchWords", JSON.stringify(sw));
+        params.set("categories", JSON.stringify(cat));
+        params.set("priceRange", JSON.stringify(pr ?? []));
+        params.set("orderBy", ord || "default");
+        return `/home?${params.toString()}`;
+    }
+
     // Parse categories from URL for syncing with selectedCategories state
     const categoriesArrParsed = isValidJSON(categoriesArrStr) ? JSON.parse(categoriesArrStr) : [];
     const categoriesArrInOBJ: number[] = Array.isArray(categoriesArrParsed) 
@@ -456,8 +473,14 @@ function Home() {
             if (quantityOfPages.current > 0 && page > quantityOfPages.current) {
                 showSpinner(false);
                 setIsFilterLoading(false);
-                // Reset to page 1 if current page is invalid
-                navigate(`/home?page=1&brand=${brandId}`);
+                const params = new URLSearchParams();
+                params.set("page", "1");
+                params.set("brand", brandId);
+                params.set("searchWords", JSON.stringify(filters.searchWords));
+                params.set("categories", JSON.stringify(filters.categories));
+                params.set("priceRange", JSON.stringify(filters.priceRange || []));
+                params.set("orderBy", filters.orderBy || "default");
+                navigate(`/home?${params.toString()}`);
                 return;
             }
             
@@ -483,11 +506,19 @@ function Home() {
             if (minPageArrIndex < 0) minPageArrIndex = 0;
             
             const pagesIndexArrSegmented = pagesIndexArr.slice(minPageArrIndex, maxPageArrIndex);
+            const pageUrl = (p: number) => {
+                const params = new URLSearchParams();
+                params.set("page", String(p));
+                params.set("brand", brandId);
+                params.set("searchWords", JSON.stringify(filters.searchWords));
+                params.set("categories", JSON.stringify(filters.categories));
+                params.set("priceRange", JSON.stringify(filters.priceRange || []));
+                params.set("orderBy", filters.orderBy || "default");
+                return `/home?${params.toString()}`;
+            };
             const pagesIndexJSX = pagesIndexArrSegmented.map((numberOfPage, index) => 
                 <div
-                    onClick={() => {
-                        navigate(`/home?page=${numberOfPage}&brand=${brandId}`);
-                    }}
+                    onClick={() => navigate(pageUrl(numberOfPage))}
                     key={index}
                     className="homeNumberOfPage homePaginationButton opcionHoverPinkTransition flex">
                     {numberOfPage}
@@ -943,10 +974,6 @@ function Home() {
         }
     }, [categoriesData, categoriesArrInOBJ]);
 
-    const getCategories = (): number[] => {
-        return selectedCategories;
-    };
-    
     useEffect(() => {
         if (!productsData || !productsData.length) return;
         const mult = globalMultiplierRef.current || 0;
@@ -1017,15 +1044,10 @@ function Home() {
 
     /******************************* Lógica para buscar propductos con texto  **************************/
 
-    const getSearchWords = (): string[] => {
-        return filterState.searchWords;
-    };
-
     const searchWordsQuery = () => {
         saveScrollPosition();
         saveInputsState();
         
-        // Update filter state with current search words
         const searchInput = document.querySelector(".homePageFinderSearchInput") as HTMLInputElement;
         const searchWordsArr = searchInput?.value.split(" ") || [];
         const searchWordsArrWithoutSpaces = searchWordsArr.map((word) => word.trim());
@@ -1036,8 +1058,8 @@ function Home() {
             searchWords: searchWordsArrWithoutEmptyStrings
         }));
         
-        // Reset to page 1 when searching
-        navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
+        setSearchWordsResults([]);
+        navigate(buildHomeUrl(1, { searchWords: searchWordsArrWithoutEmptyStrings }));
     };
 
     const handleCurrencyToggle = (isUsdSelected: boolean) => {
@@ -1101,17 +1123,11 @@ function Home() {
             if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy) * 1.5) return;
 
             if (dx < 0) {
-                // Swipe left -> next page
                 const next = calculateNextPage();
-                if (next !== pageNumberFromQuery) {
-                    navigate(`/home?page=${next}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${getCurrentBrandId()}`);
-                }
+                if (next !== pageNumberFromQuery) navigate(buildHomeUrl(next));
             } else {
-                // Swipe right -> previous page
                 const prev = calculatePreviousPage();
-                if (prev !== pageNumberFromQuery) {
-                    navigate(`/home?page=${prev}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${getCurrentBrandId()}`);
-                }
+                if (prev !== pageNumberFromQuery) navigate(buildHomeUrl(prev));
             }
         };
 
@@ -1145,10 +1161,6 @@ function Home() {
         }
     };
 
-    const getPriceRange = (): [number, number] | null => {
-        return checkIfRange();
-    };
-    
     const searchByCategorieAndPriceRange = (newCategories?: number[]) => {
         saveScrollPosition();
         saveInputsState();
@@ -1159,15 +1171,12 @@ function Home() {
         // Use provided categories or current selectedCategories
         const categoriesToUse = newCategories !== undefined ? newCategories : selectedCategories;
         
-        // Update filter state with current selected categories and price range
         setFilterState(prev => ({
             ...prev,
             categories: categoriesToUse,
             priceRange: priceRangeValue
         }));
-        
-        // Reset to page 1 when filtering
-        navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
+        navigate(buildHomeUrl(1, { categories: categoriesToUse, priceRange: priceRangeValue }));
     };
 
     // Toggle category selection (multi-select behavior)
@@ -1184,8 +1193,6 @@ function Home() {
         }
         
         setSelectedCategories(newCategories);
-        
-        // Trigger search with new categories immediately
         saveScrollPosition();
         saveInputsState();
         const priceRangeValue = checkIfRange();
@@ -1194,7 +1201,7 @@ function Home() {
             categories: newCategories,
             priceRange: priceRangeValue
         }));
-        navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
+        navigate(buildHomeUrl(1, { categories: newCategories, priceRange: priceRangeValue }));
     };
 
     const clearPriceRangeInputs = () => {
@@ -1251,6 +1258,8 @@ function Home() {
         localStorage.removeItem("homeScrollPosition");
         localStorage.removeItem("homeInputsState");
         clearPriceRangeInputs();
+        setSearchWords([]);
+        setSearchWordsResults([]);
         setFilterState({
             searchWords: [],
             categories: [],
@@ -1258,7 +1267,7 @@ function Home() {
             orderBy: "default"
         });
         setSelectedCategories([]);
-        navigate("/home");
+        navigate(buildHomeUrl(1, { searchWords: [], categories: [], priceRange: null, orderBy: "default" }));
     };
 
     const resetFiltersAndClose = () => {
@@ -1295,15 +1304,11 @@ function Home() {
     const orderResultsBy = (orderByFromOptions: FilterOrderByTypes) => {
         saveScrollPosition();
         saveInputsState();
-        
-        // Update filter state with new orderBy
         setFilterState(prev => ({
             ...prev,
             orderBy: orderByFromOptions
         }));
-        
-        // Reset to page 1 when changing order
-        navigate(`/home?page=1&brand=${getCurrentBrandId()}`);
+        navigate(buildHomeUrl(1, { orderBy: orderByFromOptions }));
     };
 
     /************************************** Lógica de busqueda dinámica de productos **************************************/
@@ -1314,31 +1319,28 @@ function Home() {
     };
 
     const handleSearchWords = async (e: React.ChangeEvent) => {
-
-        const serachInput = e.target as HTMLInputElement;
-        const searchWordsArr = serachInput.value.split(" ");
+        const searchInput = e.target as HTMLInputElement;
+        const searchWordsArr = searchInput.value.split(" ");
         const searchWordsArrWithoutSpaces = searchWordsArr.map((word) => word.trim());
         const searchWordsArrWithoutEmptyStrings = searchWordsArrWithoutSpaces.filter((word) => word !== "");
 
         setSearchWords(searchWordsArr);
-        
-        // Update filterState for search suggestions
-        setFilterState(prev => ({
-            ...prev,
-            searchWords: searchWordsArrWithoutEmptyStrings
-        }));
 
         if (!searchWordsArrWithoutEmptyStrings.length) {
             setSearchWordsResults([]);
+            setFilterState(prev => ({ ...prev, searchWords: [] }));
+            const hadSearch = filterState.searchWords.length > 0
+                || (searchWordsStr && isValidJSON(searchWordsStr) && (JSON.parse(searchWordsStr) as string[]).length > 0);
+            if (hadSearch) navigate(buildHomeUrl(1, { searchWords: [] }));
             return;
         }
-   
+
         const currentBrand = getCurrentBrandId();
         const isOfertas = currentBrand === OFERTAS_BRAND_ID;
         const response2 = await getProductsFiltered({
-            limit: 10, 
-            offset: 0, 
-            fields: ["nombre", "id", "codigo"],                                              
+            limit: 10,
+            offset: 0,
+            fields: ["nombre", "id", "codigo"],
             condition: isOfertas
                 ? { field: "con_descuento", operator: "=", value: 1 }
                 : { field: "estado", operator: "=", value: "1" },
@@ -1347,17 +1349,23 @@ function Home() {
             priceRangeArr: filterState.priceRange ? (dolar ? [filterState.priceRange[0] * globalMultiplierRef.current, filterState.priceRange[1] * globalMultiplierRef.current] : [filterState.priceRange[0], filterState.priceRange[1]]) : [],
             orderBy: filterState.orderBy || "default",
             brand: isOfertas ? "" : (currentBrand || (activeBrandsRef.current.length > 0 ? activeBrandsRef.current[0].id.toString() : ""))
-        });          
+        });
 
         if (response2.data && response2.data.length) {
             const productsData: Producto[] = response2.data;
-            setSearchWordsResults(productsData.map((product) => {
-                return (
-                    <div className="searchWordsResult flex" key={product.id} onClick={() => showProductDetails(product.id)}>
-                        <p className="searchWordsResultText">{product.nombre.length > 80 ? product.nombre.substring(0, 80) + "..." : product.nombre } <span>({product.codigo})</span></p>
-                    </div>
-                );
-            }));
+            setSearchWordsResults(productsData.map((product) => (
+                <div
+                    className="searchWordsResult flex"
+                    key={product.id}
+                    onClick={() => {
+                        setSearchWordsResults([]);
+                        document.removeEventListener("click", closeSearchWordsResults);
+                        searchWordsQuery();
+                    }}
+                >
+                    <p className="searchWordsResultText">{product.nombre.length > 80 ? product.nombre.substring(0, 80) + "..." : product.nombre} <span>({product.codigo})</span></p>
+                </div>
+            )));
         } else {
             setSearchWordsResults([]);
         }
@@ -1539,14 +1547,14 @@ function Home() {
                 <div className="homePagesIndexContainer flex">
                     <div 
                         className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                        onClick={ () => navigate(`/home?page=${calculatePreviousPage()}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${getCurrentBrandId()}`)  } 
+                        onClick={() => navigate(buildHomeUrl(calculatePreviousPage()))} 
                     > 
                         ‹ 
                     </div>
                     {pagesIndex}
                     <div 
                         className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
-                        onClick={ () => navigate(`/home?page=${calculateNextPage()}&searchWords=${getSearchWords()}&categories=${getCategories()}&priceRange=${getPriceRange()}&orderBy=${orderBy}&brand=${getCurrentBrandId()}`) } 
+                        onClick={() => navigate(buildHomeUrl(calculateNextPage()))} 
                     > 
                         › 
                     </div>
