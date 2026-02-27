@@ -45,28 +45,30 @@ const NavBar = () => {
             {/* Brand Tabs - only visible when authenticated AND on Home page */}
             {showBrandTabs && (
                 <nav className="navBar_brandTabs" aria-label="Navegación de marcas">
-                    {brands.map((brand) => {
-                        const isActive = brand.id.toString() === activeBrandId;
-                        return (
-                            <button
-                                key={brand.id}
-                                type="button"
-                                className={`navBar_brandTab ${isActive ? "navBar_brandTab--active" : ""}`}
-                                onClick={() => selectBrand(brand.id.toString())}
-                                aria-current={isActive ? "true" : undefined}
-                            >
-                                {brand.descripcion}
-                            </button>
-                        );
-                    })}
-                    <button
-                        type="button"
-                        className={`navBar_brandTab navBar_brandTab--ofertas ${activeBrandId === "ofertas" ? "navBar_brandTab--ofertas-active" : ""}`}
-                        onClick={() => selectBrand("ofertas")}
-                        aria-current={activeBrandId === "ofertas" ? "true" : undefined}
-                    >
-                        OFERTAS
-                    </button>
+                    <div className="navBar_brandTabsInner">
+                        {brands.map((brand) => {
+                            const isActive = brand.id.toString() === activeBrandId;
+                            return (
+                                <button
+                                    key={brand.id}
+                                    type="button"
+                                    className={`navBar_brandTab ${isActive ? "navBar_brandTab--active" : ""}`}
+                                    onClick={() => selectBrand(brand.id.toString())}
+                                    aria-current={isActive ? "true" : undefined}
+                                >
+                                    {brand.descripcion}
+                                </button>
+                            );
+                        })}
+                        <button
+                            type="button"
+                            className={`navBar_brandTab navBar_brandTab--ofertas ${activeBrandId === "ofertas" ? "navBar_brandTab--ofertas-active" : ""}`}
+                            onClick={() => selectBrand("ofertas")}
+                            aria-current={activeBrandId === "ofertas" ? "true" : undefined}
+                        >
+                            OFERTAS
+                        </button>
+                    </div>
                 </nav>
             )}
 

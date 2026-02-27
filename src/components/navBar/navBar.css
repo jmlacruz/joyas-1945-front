@@ -35,22 +35,43 @@ body.sidePanel-open .contMenu {
 
 /************************ Brand Tabs in Header **************************/
 
+/* ROOT CAUSE: Centering an overflowing child inside a scroll container (whether via
+   flex justify-content:center or text-align:center on an inline child) pushes content
+   past the left edge. scrollLeft can never go negative, so the left overflow is
+   permanently unreachable and the first tab gets cropped.
+
+   FIX: Use margin:0 auto on a block-level inner element. Per CSS spec, when a block
+   child's width exceeds its parent, auto margins resolve to 0 — content starts flush
+   left and overflows only rightward (fully scrollable). When it fits, auto margins
+   center it normally. No centering property on the scroll container itself. */
+
 .navBar_brandTabs {
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
     flex: 1 1 auto;
     min-width: 0;
     height: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;  /* Firefox */
-    background-color: #f0f0f0;
     margin: 0 1rem;
 }
 
 .navBar_brandTabs::-webkit-scrollbar {
     display: none;  /* Chrome/Safari */
+}
+
+/* Block-level flex row: left-aligned, full row scrolls inside container.
+   Gray background only covers the tabs themselves. */
+.navBar_brandTabsInner {
+    display: flex;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    width: max-content;
+    height: 100%;
+    margin: 0;
+    background-color: #f0f0f0;
 }
 
 .navBar_brandTab {
@@ -349,6 +370,21 @@ body.sidePanel-open .contMenu {
     /* Hide brand tabs in header on mobile - they appear below hero instead */
     .navBar_brandTabs {
         display: none;
+    }
+}
+
+/* Desktop compression for smaller widths: reduce logo gap, tab padding, and right-side pressure */
+@media only screen and (max-width: 1659px) {
+    .contMenu_simplified {
+        padding-left: 0.85rem;  /* Aggressively reduce left padding to free space for tabs */
+    }
+
+    .navBarContLogo {
+        margin-right: 0.75rem;  /* Strongly narrow gap between logo and first tab */
+    }
+
+    .navBar_brandTab {
+        padding: 0 0.625rem;  /* 50% reduction from 1.25rem */
     }
 }
 
