@@ -26,147 +26,161 @@ const MOBILE_MQ = "(max-width: 768px), (orientation: portrait)";
 
 type CarouselItem = { id: string; label: string; isOfertas: boolean };
 
-function easeInOutCubic(t: number): number {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
 function MobileBrandsCarousel({ brands, activeBrandId, onSelect }: {
     brands: Marca[];
     activeBrandId: string;
     onSelect: (id: string) => void;
 }) {
     const navRef = useRef<HTMLElement>(null);
-    const isAdjustingRef = useRef(false);
-    const hasPlayedIntroRef = useRef(false);
-    const introAnimatingRef = useRef(false);
+    const hasPlayedEntryRef = useRef(false);
+    const trainTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+    const prevActiveBrandIdRef = useRef<string | null>(null);
 
     const items: CarouselItem[] = [
         ...brands.map(b => ({ id: b.id.toString(), label: b.descripcion, isOfertas: false })),
         { id: OFERTAS_BRAND_ID, label: "OFERTAS", isOfertas: true },
     ];
 
-    const centerItem = (container: HTMLElement, itemId: string, smooth: boolean) => {
-        const el = container.querySelector(`[data-item-id="${itemId}"][data-dup-index="1"]`) as HTMLElement | null;
-        if (!el) return;
-        const target = el.offsetLeft + el.offsetWidth / 2 - container.clientWidth / 2;
-        container.scrollTo({ left: target, behavior: smooth ? "smooth" : "auto" });
+    /** Compute target scroll position for active brand (first=left, last=right, others=centered). Does not scroll. */
+    const getTargetScrollPosition = (nav: HTMLElement): number => {
+        const index = items.findIndex(i => i.id === activeBrandId);
+        if (index < 0) return 0;
+        const el = nav.querySelector(`[data-item-id="${activeBrandId}"]`) as HTMLElement | null;
+        if (!el) return 0;
+        const maxScroll = nav.scrollWidth - nav.clientWidth;
+        if (maxScroll <= 0) return 0;
+        if (index === 0) return Math.max(0, el.offsetLeft);
+        if (index === items.length - 1) return maxScroll;
+        const target = el.offsetLeft + el.offsetWidth / 2 - nav.clientWidth / 2;
+        return Math.max(0, Math.min(target, maxScroll));
     };
 
-    const wrapScroll = (nav: HTMLElement) => {
-        const seg = nav.scrollWidth / 3;
-        if (nav.scrollLeft < 1) {
-            nav.scrollLeft += seg;
-        } else if (nav.scrollLeft >= seg * 2 - nav.clientWidth) {
-            nav.scrollLeft -= seg;
+    /** Position nav by selected item: first = left edge, last = right edge, others = centered. */
+    const scrollToSelected = (nav: HTMLElement, smooth: boolean): number => {
+        const target = getTargetScrollPosition(nav);
+        nav.scrollTo({ left: target, behavior: smooth ? "smooth" : "auto" });
+        return target;
+    };
+
+    /** One-time "train" entry: start from right (empty), 2–3 stepped moves left, then settle at final position. */
+    const playTrainEntry = (nav: HTMLElement) => {
+        const maxScroll = nav.scrollWidth - nav.clientWidth;
+        if (maxScroll <= 0) return () => {};
+
+        const finalTarget = getTargetScrollPosition(nav);
+        const startScroll = maxScroll;
+        const distance = startScroll - finalTarget;
+        if (distance <= 0) {
+            nav.scrollTo({ left: finalTarget, behavior: "auto" });
+            return () => {};
         }
-    };
 
-    // 360 intro animation (one full loop via rAF easing)
-    const playIntro = (nav: HTMLElement, onDone: () => void) => {
-        const seg = nav.scrollWidth / 3;
-        const startLeft = nav.scrollLeft;
-        const distance = seg; // scroll exactly one full segment (all items once)
-        const duration = 1200;
-        let startTime: number | null = null;
-        introAnimatingRef.current = true;
+        nav.scrollLeft = startScroll;
 
-        const step = (timestamp: number) => {
-            if (!startTime) startTime = timestamp;
-            const elapsed = timestamp - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const easedProgress = easeInOutCubic(progress);
+        const stepMs = 280;
+        const steps = 3;
+        const timeouts: ReturnType<typeof setTimeout>[] = [];
+        for (let i = 1; i <= steps; i++) {
+            const t = (i / steps);
+            const stepLeft = Math.round(finalTarget + distance * (1 - t));
+            const stepLeftClamped = Math.max(0, Math.min(stepLeft, maxScroll));
+            timeouts.push(setTimeout(() => {
+                nav.scrollTo({ left: stepLeftClamped, behavior: "auto" });
+            }, stepMs * i));
+        }
+        timeouts.push(setTimeout(() => {
+            nav.scrollTo({ left: finalTarget, behavior: "auto" });
+            trainTimeoutsRef.current = [];
+        }, stepMs * (steps + 1)));
+        trainTimeoutsRef.current = timeouts;
 
-            nav.scrollLeft = startLeft + distance * easedProgress;
-            wrapScroll(nav);
-
-            if (progress < 1) {
-                requestAnimationFrame(step);
-            } else {
-                introAnimatingRef.current = false;
-                onDone();
-            }
+        const cancel = () => {
+            trainTimeoutsRef.current.forEach(clearTimeout);
+            trainTimeoutsRef.current = [];
+            nav.scrollTo({ left: finalTarget, behavior: "auto" });
         };
-        requestAnimationFrame(step);
+
+        return cancel;
     };
 
-    // Mount: position + intro or just center
+    // On load/refresh: run train entry once (start from right, step left, settle at active brand)
     useEffect(() => {
         const nav = navRef.current;
         if (!nav || !window.matchMedia(MOBILE_MQ).matches) return;
-        if (hasPlayedIntroRef.current) return;
-        hasPlayedIntroRef.current = true;
-
-        const seg = nav.scrollWidth / 3;
-        nav.scrollLeft = seg; // jump to middle segment
+        if (hasPlayedEntryRef.current) return;
+        hasPlayedEntryRef.current = true;
 
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         if (prefersReducedMotion) {
-            centerItem(nav, activeBrandId, false);
+            scrollToSelected(nav, false);
             return;
         }
 
-        // Start intro after layout settles
-        const timer = setTimeout(() => {
-            playIntro(nav, () => {
-                centerItem(nav, activeBrandId, true);
-            });
-        }, 150);
+        const maxScroll = nav.scrollWidth - nav.clientWidth;
+        if (maxScroll > 0) nav.scrollLeft = maxScroll;
 
-        return () => { clearTimeout(timer); introAnimatingRef.current = false; };
-    }, [brands.length]);
-
-    // Center on active item change (user tap)
-    useEffect(() => {
-        const nav = navRef.current;
-        if (!nav || !window.matchMedia(MOBILE_MQ).matches) return;
-        if (introAnimatingRef.current) return; // don't fight the intro
-        centerItem(nav, activeBrandId, true);
-    }, [activeBrandId]);
-
-    // Infinite scroll loop handler
-    useEffect(() => {
-        const nav = navRef.current;
-        if (!nav || !window.matchMedia(MOBILE_MQ).matches) return;
-
-        let ticking = false;
-        const handleScroll = () => {
-            if (ticking || isAdjustingRef.current || introAnimatingRef.current) return;
-            ticking = true;
-            requestAnimationFrame(() => {
-                ticking = false;
-                if (!nav || isAdjustingRef.current) return;
-                const seg = nav.scrollWidth / 3;
-                const threshold = 20;
-                if (nav.scrollLeft < threshold) {
-                    isAdjustingRef.current = true;
-                    nav.scrollLeft += seg;
-                    isAdjustingRef.current = false;
-                } else if (nav.scrollLeft > seg * 2 - nav.clientWidth + threshold) {
-                    isAdjustingRef.current = true;
-                    nav.scrollLeft -= seg;
-                    isAdjustingRef.current = false;
-                }
-            });
+        const settle = () => {
+            const finalTarget = getTargetScrollPosition(nav);
+            nav.scrollTo({ left: finalTarget, behavior: "auto" });
         };
 
-        nav.addEventListener("scroll", handleScroll, { passive: true });
-        return () => nav.removeEventListener("scroll", handleScroll);
-    }, [brands.length]);
+        const cancelRef = { current: () => {} };
 
-    const renderItem = (item: CarouselItem, dupIndex: number) => {
+        const startTimer = setTimeout(() => {
+            cancelRef.current = playTrainEntry(nav);
+        }, 150);
+
+        const onInteract = () => {
+            cancelRef.current();
+            settle();
+            nav.removeEventListener("touchstart", onInteract);
+        };
+
+        nav.addEventListener("touchstart", onInteract, { passive: true });
+
+        const cleanup = () => {
+            clearTimeout(startTimer);
+            trainTimeoutsRef.current.forEach(clearTimeout);
+            trainTimeoutsRef.current = [];
+            cancelRef.current();
+            nav.removeEventListener("touchstart", onInteract);
+        };
+
+        const doneTimer = setTimeout(() => {
+            nav.removeEventListener("touchstart", onInteract);
+        }, 1200);
+
+        return () => {
+            clearTimeout(doneTimer);
+            cleanup();
+        };
+    }, [brands.length, activeBrandId]);
+
+    // On tap: center selected (with first/last exceptions). Skip on initial mount (positioning done in other effect).
+    useEffect(() => {
+        const nav = navRef.current;
+        if (!nav || !window.matchMedia(MOBILE_MQ).matches) return;
+        if (prevActiveBrandIdRef.current === null) {
+            prevActiveBrandIdRef.current = activeBrandId;
+            return;
+        }
+        prevActiveBrandIdRef.current = activeBrandId;
+        scrollToSelected(nav, true);
+    }, [activeBrandId]);
+
+    const renderItem = (item: CarouselItem) => {
         const isActive = item.id === activeBrandId;
         const cls = item.isOfertas
             ? `homeMobileBrandsNav_tab homeMobileBrandsNav_tab--ofertas${isActive ? " homeMobileBrandsNav_tab--ofertas-active" : ""}`
             : `homeMobileBrandsNav_tab${isActive ? " homeMobileBrandsNav_tab--active" : ""}`;
         return (
             <button
-                key={`${dupIndex}-${item.id}`}
+                key={item.id}
                 type="button"
                 className={cls}
                 data-item-id={item.id}
-                data-dup-index={dupIndex}
                 onClick={() => onSelect(item.id)}
-                aria-current={isActive && dupIndex === 1 ? "true" : undefined}
+                aria-current={isActive ? "true" : undefined}
             >
                 {item.label}
             </button>
@@ -175,7 +189,7 @@ function MobileBrandsCarousel({ brands, activeBrandId, onSelect }: {
 
     return (
         <nav ref={navRef} className="homeMobileBrandsNav" aria-label="Navegación de marcas">
-            {[0, 1, 2].map(dupIndex => items.map(item => renderItem(item, dupIndex)))}
+            {items.map(item => renderItem(item))}
         </nav>
     );
 }
@@ -463,9 +477,11 @@ function Home() {
                 setIsFilterLoading(false);
                 return;
             }
-            
-            const productsFound = typeof response1.data === "number" ? response1.data : 0;
-            quantityOfPages.current = Math.ceil(productsFound / resultsByPage);
+
+            const totalCount = typeof response1.data === "number" && !isNaN(response1.data)
+                ? response1.data
+                : Math.max(0, parseInt(String(response1.data), 10) || 0);
+            quantityOfPages.current = Math.ceil(totalCount / resultsByPage);
             
             // Validate pages
             if (isNaN(quantityOfPages.current) || quantityOfPages.current < 0) {
@@ -543,21 +559,40 @@ function Home() {
             // Render products
             // Validar que response2.data existe y es un array antes de acceder a .length
             const isValidDataArray = Array.isArray(response2.data) && response2.data.length > 0;
-            const hasValidCount = response1.success && typeof response1.data === "number";
+            const hasValidCount = response1.success && response1.data !== null && response1.data !== undefined;
             
             if (response2.success && isValidDataArray && hasValidCount) {
-                // Store raw product data so products can be regenerated when currency changes
+                const countToShow = totalCount > 0 ? totalCount : response2.data.length;
                 setProductsData(response2.data);
-                setProductsFound(productsFound);
+                setProductsFound(countToShow);
                 setPagesIndex(pagesIndexJSX);
                 showSpinner(false);
                 setIsFilterLoading(false);
             } else if (response2.success && Array.isArray(response2.data) && response2.data.length === 0) {
-                // Sin resultados pero respuesta exitosa
                 setProductsData([]);
-                setProductsFound(productsFound);
+                setProductsFound(totalCount);
                 setPagesIndex(pagesIndexJSX);
                 setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
+                showSpinner(false);
+                setIsFilterLoading(false);
+            } else if (response2.success && isValidDataArray && !hasValidCount) {
+                quantityOfPages.current = 1;
+                const pageUrlFallback = (p: number) => {
+                    const params = new URLSearchParams();
+                    params.set("page", String(p));
+                    params.set("brand", brandId);
+                    params.set("searchWords", JSON.stringify(filters.searchWords));
+                    params.set("categories", JSON.stringify(filters.categories));
+                    params.set("priceRange", JSON.stringify(filters.priceRange || []));
+                    params.set("orderBy", filters.orderBy || "default");
+                    return `/home?${params.toString()}`;
+                };
+                const pagesIndexJSXFallback = [
+                    <div key={0} onClick={() => navigate(pageUrlFallback(1))} className="homeNumberOfPage homePaginationButton opcionHoverPinkTransition flex">1</div>
+                ];
+                setProductsData(response2.data);
+                setProductsFound(response2.data.length);
+                setPagesIndex(pagesIndexJSXFallback);
                 showSpinner(false);
                 setIsFilterLoading(false);
             } else {
@@ -576,7 +611,7 @@ function Home() {
                     console.log("Error: response2.data no es un array. Tipo:", typeof response2.data, "Valor:", response2.data);
                 }
                 if (response2.success && Array.isArray(response2.data) && response2.data.length > 0 && !hasValidCount) {
-                    console.log("Error: response1.data no es válido. Tipo:", typeof response1.data, "Valor:", response1.data);
+                    console.log("Error: response1 (count) no es válido. Tipo:", typeof response1.data, "Valor:", response1.data);
                 }
                 showElement(true);
                 showSpinner(false);
@@ -1401,6 +1436,10 @@ function Home() {
 
 
 
+    const displayProductsCount = (productsData?.length ?? 0) > 0 && productsFound === 0
+        ? (productsData?.length ?? 0)
+        : productsFound;
+
     return (
         <div className="pagesContainer homeContainer flex wrap elementToShow">
 
@@ -1482,7 +1521,7 @@ function Home() {
                                 <p onClick={() => orderResultsBy("date")} role="date">Fecha de Subida</p>
                             </div>
                         </div>
-                        <p className="homePageOrderTextFindedQuantity">Se encontraron <span className="homePageOrderTextFindedQuantityBold">{productsFound} Productos</span> en <span className="homePageOrderTextFindedQuantityBold">Joyas1945</span></p>
+                        <p className="homePageOrderTextFindedQuantity">Se encontraron <span className="homePageOrderTextFindedQuantityBold">{displayProductsCount} Productos</span> en <span className="homePageOrderTextFindedQuantityBold">Joyas1945</span></p>
                     </div>
                 </div>
             </div>
@@ -1566,7 +1605,7 @@ function Home() {
 
             <div className="homePagesIndexContainer homePagesIndexContainer--spacer" />
             {/* Mobile-only top pagination indicator */}
-            {productsFound !== 0 && (
+            {displayProductsCount !== 0 && (
                 <div className="homePaginationTopMobile flex">
                     <span className="homePaginationTopMobile_label">
                         Página {pageNumberFromQuery} de {quantityOfPages.current || 1}
@@ -1583,7 +1622,7 @@ function Home() {
                 </div>
             )}
             {
-                productsFound !== 0 &&
+                displayProductsCount !== 0 &&
                 <div className="homePagesIndexContainer flex">
                     <div 
                         className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 

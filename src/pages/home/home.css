@@ -1224,13 +1224,15 @@
         padding: 0;
     }
 
-    /* Show mobile brands nav on portrait - STICKY */
+    /* Show mobile brands nav on portrait - STICKY.
+       flex-start ensures first tab is at scrollLeft 0 (no left clipping from center alignment). */
     .homeMobileBrandsNav {
         display: flex;
         position: sticky;
         top: var(--navbar-height);
         z-index: 90;
         background-color: #f5f5f5;
+        justify-content: flex-start;
     }
 
     /* Brand badge: left-aligned, 24px gap to search */
@@ -1409,13 +1411,14 @@
 
 /* Small screens - both portrait and landscape */
 @media only screen and (max-width: 768px) {
-    /* Mobile brands nav - STICKY */
+    /* Mobile brands nav - STICKY. flex-start so first tab is fully visible (no left clipping). */
     .homeMobileBrandsNav {
         display: flex;
         position: sticky;
         top: var(--navbar-height);
         z-index: 90;
         background-color: #f5f5f5;  /* Solid background for sticky */
+        justify-content: flex-start;
     }
 
     /* Top pagination indicator - mobile only */
