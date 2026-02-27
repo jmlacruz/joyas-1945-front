@@ -82,6 +82,11 @@
     aspect-ratio: 1/1;
 }
 
+a.productDetailsPortrait_ws {
+    text-decoration: none;
+    color: inherit;
+}
+
 .productDetailsPortrait_priceCont img {
     height: 65%;
     aspect-ratio: 1/1;

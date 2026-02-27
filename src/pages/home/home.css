@@ -1085,69 +1085,79 @@
         padding-bottom: 0.5rem;
     }
 
-    /* Currency+Price row: currency left, price group right; larger gap to avoid mis-taps */
+    /* Mobile: currency and price in 2 rows (currency full width, then price row full width) */
     .filtersCurrencyPriceRow {
         display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 20px;  /* Increased from 12px (saved from separator) for touch target separation */
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
         width: 100%;
         order: 2;
     }
 
-    .filtersCurrencyCol {
+    .filtersCurrencyCol.mobileCurrencyRow {
+        width: 100%;
+        display: flex;
+        justify-content: center;
         flex: 0 0 auto;
     }
 
-    .filtersPriceCol {
-        flex: 1 1 auto;
+    .filtersCurrencyCol.mobileCurrencyRow .filtersCurrencyToggleCont {
+        width: 100%;
+        justify-content: center;
+        padding: 0.35rem 0;
+    }
+
+    .filtersPriceCol.mobilePriceRow {
+        width: 100%;
+        flex: 0 0 auto;
         min-width: 0;
         padding-left: 0;
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-end;
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .filterPriceRangeTitle {
         display: none;  /* Hide PRECIO title on mobile */
     }
 
-    /* priceGroup: minMaxGroup + Filtrar; micro-gap around separator */
-    .filterInputRow {
+    .filtersPriceCol.mobilePriceRow .filterInputRow {
         display: flex;
         align-items: center;
-        gap: 2px;  /* Very tight around "-" (<=2px each side) */
-        flex: 1;
-        justify-content: flex-end;
+        gap: 10px;
+        width: 100%;
+        flex-wrap: nowrap;
     }
 
     .filterInputRow .filterButton {
         margin-top: 0 !important;
+        flex-shrink: 0;
     }
 
     .filterPriceInputSeparator {
         margin: 0;
         padding: 0;
         width: auto;
+        flex-shrink: 0;
     }
 
-    /* Inputs: keep 64px (no width increase; saved space went to outer gap) */
+    /* Inputs: flexible width, min 16px font for iOS zoom prevention */
     .filterPriceInput {
-        width: 64px;
+        flex: 1 1 0%;
+        min-width: 0;
         font-size: 16px;
-        padding: 6px 8px;
+        padding: 8px 10px;
+        width: auto;
     }
 
-    /* Same height for all controls in the row */
     .filtersCurrencyPriceRow .currencyToggleOption,
     .filtersCurrencyPriceRow .filterPriceInput,
     .filtersCurrencyPriceRow .filterButton {
-        height: 2.25rem;
-        min-height: 2.25rem;
+        height: 2.5rem;
+        min-height: 2.5rem;
         box-sizing: border-box;
     }
 
-    /* Override: currency left-aligned, not full-width centered */
     .filtersCurrencyToggleCont {
         width: auto;
         justify-content: flex-start;
@@ -1224,13 +1234,15 @@
         padding: 0;
     }
 
-    /* Show mobile brands nav on portrait - STICKY */
+    /* Show mobile brands nav on portrait - STICKY.
+       flex-start ensures first tab is at scrollLeft 0 (no left clipping from center alignment). */
     .homeMobileBrandsNav {
         display: flex;
         position: sticky;
         top: var(--navbar-height);
         z-index: 90;
         background-color: #f5f5f5;
+        justify-content: flex-start;
     }
 
     /* Brand badge: left-aligned, 24px gap to search */
@@ -1409,13 +1421,14 @@
 
 /* Small screens - both portrait and landscape */
 @media only screen and (max-width: 768px) {
-    /* Mobile brands nav - STICKY */
+    /* Mobile brands nav - STICKY. flex-start so first tab is fully visible (no left clipping). */
     .homeMobileBrandsNav {
         display: flex;
         position: sticky;
         top: var(--navbar-height);
         z-index: 90;
         background-color: #f5f5f5;  /* Solid background for sticky */
+        justify-content: flex-start;
     }
 
     /* Top pagination indicator - mobile only */
@@ -1445,65 +1458,76 @@
         padding-bottom: 0.5rem;
     }
 
-    /* Currency+Price row: currency left, price group right; larger gap to avoid mis-taps */
+    /* Mobile: currency and price in 2 rows (currency full width, then price row full width) */
     .filtersCurrencyPriceRow {
         display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 20px;  /* Increased from 12px (saved from separator) for touch target separation */
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
         width: 100%;
         order: 2;
     }
 
-    .filtersCurrencyCol {
+    .filtersCurrencyCol.mobileCurrencyRow {
+        width: 100%;
+        display: flex;
+        justify-content: center;
         flex: 0 0 auto;
     }
 
-    .filtersPriceCol {
-        flex: 1 1 auto;
+    .filtersCurrencyCol.mobileCurrencyRow .filtersCurrencyToggleCont {
+        width: 100%;
+        justify-content: center;
+        padding: 0.35rem 0;
+    }
+
+    .filtersPriceCol.mobilePriceRow {
+        width: 100%;
+        flex: 0 0 auto;
         min-width: 0;
         padding-left: 0;
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-end;
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .filterPriceRangeTitle {
         display: none;  /* Hide PRECIO title on mobile */
     }
 
-    /* priceGroup: minMaxGroup + Filtrar; micro-gap around separator */
-    .filterInputRow {
+    .filtersPriceCol.mobilePriceRow .filterInputRow {
         display: flex;
         align-items: center;
-        gap: 2px;  /* Very tight around "-" (<=2px each side) */
-        flex: 1;
-        justify-content: flex-end;
+        gap: 10px;
+        width: 100%;
+        flex-wrap: nowrap;
     }
 
     .filterInputRow .filterButton {
         margin-top: 0 !important;
+        flex-shrink: 0;
     }
 
     .filterPriceInputSeparator {
         margin: 0;
         padding: 0;
         width: auto;
+        flex-shrink: 0;
     }
 
-    /* Inputs: keep 64px (no width increase; saved space went to outer gap) */
+    /* Inputs: flexible width, min 16px font for iOS zoom prevention */
     .filterPriceInput {
-        width: 64px;
+        flex: 1 1 0%;
+        min-width: 0;
         font-size: 16px;
-        padding: 6px 8px;
+        padding: 8px 10px;
+        width: auto;
     }
 
-    /* Same height for all controls in the row */
     .filtersCurrencyPriceRow .currencyToggleOption,
     .filtersCurrencyPriceRow .filterPriceInput,
     .filtersCurrencyPriceRow .filterButton {
-        height: 2.25rem;
-        min-height: 2.25rem;
+        height: 2.5rem;
+        min-height: 2.5rem;
         box-sizing: border-box;
     }
 
@@ -1524,13 +1548,6 @@
         flex-wrap: wrap;
         justify-content: center;
         gap: 0.4rem;
-    }
-
-    /* iOS zoom fix; input width 64px (saved space went to outer gap) */
-    .filterPriceInput {
-        width: 64px;
-        font-size: 16px;
-        padding: 6px 8px;
     }
 
     .filterPriceInput::placeholder {

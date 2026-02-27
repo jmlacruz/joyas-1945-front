@@ -45,20 +45,23 @@ const ProductDetailModal = ({ productID, isOpen, onClose, onProductClick }: Prod
         };
     }, [isOpen, checkOrientation]);
 
-    // Manejar scroll del body
+    // Manejar scroll del body y clase para ocultar botón flotante WhatsApp en detalle de producto
     useEffect(() => {
         if (isOpen) {
             const scrollWidth = window.innerWidth - document.body.offsetWidth;
             document.body.style.overflow = "hidden";
             document.body.style.marginRight = `${scrollWidth}px`;
+            document.body.classList.add("productDetailOpen");
         } else {
             document.body.style.overflow = "";
             document.body.style.marginRight = "";
+            document.body.classList.remove("productDetailOpen");
         }
 
         return () => {
             document.body.style.overflow = "";
             document.body.style.marginRight = "";
+            document.body.classList.remove("productDetailOpen");
         };
     }, [isOpen]);
 

@@ -1,6 +1,6 @@
 import "./floatingWhatsAppButton.css";
 
-const WHATSAPP_URL = "https://wa.me/5491161591361";
+export const WHATSAPP_URL = "https://wa.me/5491161591361";
 
 const FloatingWhatsAppButton = () => (
     <a

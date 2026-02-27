@@ -8,6 +8,7 @@ import { getPanoByProductId, getProductByID } from "../../services/database";
 import { sendActivityToChat } from "../../services/streamChat";
 import { RootState } from "../../store";
 import { Producto } from "../../types/database";
+import { WHATSAPP_URL } from "../floatingWhatsAppButton/FloatingWhatsAppButton";
 import { formatCurrencyPrice } from "../../utils/decimals";
 import { showElement } from "../../utils/utils";
 import waitAllImagesCharged from "../../utils/waitAllImagesCharged";
@@ -243,9 +244,15 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
                     )}
                     <span>{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</span>
                 </div>
-                <div className="productDetailsPortrait_ws flex">
+                <a
+                    href={WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="productDetailsPortrait_ws flex"
+                    aria-label="Contactar por WhatsApp"
+                >
                     <img src="/images/icons/ws.png" alt="WhatsApp" />
-                </div>
+                </a>
             </div>
             <div className="productDetailsPortrait_descriptionCont flex column">
                 <h2 className="productDetailsPortrait_descriptionText">{productData ? productData.nombre?.toUpperCase() : ""}</h2>
