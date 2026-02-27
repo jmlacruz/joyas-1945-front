@@ -158,3 +158,16 @@
         padding-right: 1rem;
     }
 }
+
+/* Desktop compression for smaller widths: free more space for brand tabs */
+@media only screen and (max-width: 1659px) {
+    .userNavbarOptions_Cont {
+        margin-left: 0.75rem;  /* Aggressively reduce right gutter pushing into nav space */
+    }
+
+    .userNavbarOptions_hamburgerZone {
+        margin-left: 0.25rem;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
