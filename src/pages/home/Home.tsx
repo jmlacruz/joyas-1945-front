@@ -477,9 +477,11 @@ function Home() {
                 setIsFilterLoading(false);
                 return;
             }
-            
-            const productsFound = typeof response1.data === "number" ? response1.data : 0;
-            quantityOfPages.current = Math.ceil(productsFound / resultsByPage);
+
+            const totalCount = typeof response1.data === "number" && !isNaN(response1.data)
+                ? response1.data
+                : Math.max(0, parseInt(String(response1.data), 10) || 0);
+            quantityOfPages.current = Math.ceil(totalCount / resultsByPage);
             
             // Validate pages
             if (isNaN(quantityOfPages.current) || quantityOfPages.current < 0) {
@@ -557,21 +559,40 @@ function Home() {
             // Render products
             // Validar que response2.data existe y es un array antes de acceder a .length
             const isValidDataArray = Array.isArray(response2.data) && response2.data.length > 0;
-            const hasValidCount = response1.success && typeof response1.data === "number";
+            const hasValidCount = response1.success && response1.data !== null && response1.data !== undefined;
             
             if (response2.success && isValidDataArray && hasValidCount) {
-                // Store raw product data so products can be regenerated when currency changes
+                const countToShow = totalCount > 0 ? totalCount : response2.data.length;
                 setProductsData(response2.data);
-                setProductsFound(productsFound);
+                setProductsFound(countToShow);
                 setPagesIndex(pagesIndexJSX);
                 showSpinner(false);
                 setIsFilterLoading(false);
             } else if (response2.success && Array.isArray(response2.data) && response2.data.length === 0) {
-                // Sin resultados pero respuesta exitosa
                 setProductsData([]);
-                setProductsFound(productsFound);
+                setProductsFound(totalCount);
                 setPagesIndex(pagesIndexJSX);
                 setProducts([<p key={0} className="noResultsText">Sin resultados</p>]);
+                showSpinner(false);
+                setIsFilterLoading(false);
+            } else if (response2.success && isValidDataArray && !hasValidCount) {
+                quantityOfPages.current = 1;
+                const pageUrlFallback = (p: number) => {
+                    const params = new URLSearchParams();
+                    params.set("page", String(p));
+                    params.set("brand", brandId);
+                    params.set("searchWords", JSON.stringify(filters.searchWords));
+                    params.set("categories", JSON.stringify(filters.categories));
+                    params.set("priceRange", JSON.stringify(filters.priceRange || []));
+                    params.set("orderBy", filters.orderBy || "default");
+                    return `/home?${params.toString()}`;
+                };
+                const pagesIndexJSXFallback = [
+                    <div key={0} onClick={() => navigate(pageUrlFallback(1))} className="homeNumberOfPage homePaginationButton opcionHoverPinkTransition flex">1</div>
+                ];
+                setProductsData(response2.data);
+                setProductsFound(response2.data.length);
+                setPagesIndex(pagesIndexJSXFallback);
                 showSpinner(false);
                 setIsFilterLoading(false);
             } else {
@@ -590,7 +611,7 @@ function Home() {
                     console.log("Error: response2.data no es un array. Tipo:", typeof response2.data, "Valor:", response2.data);
                 }
                 if (response2.success && Array.isArray(response2.data) && response2.data.length > 0 && !hasValidCount) {
-                    console.log("Error: response1.data no es válido. Tipo:", typeof response1.data, "Valor:", response1.data);
+                    console.log("Error: response1 (count) no es válido. Tipo:", typeof response1.data, "Valor:", response1.data);
                 }
                 showElement(true);
                 showSpinner(false);
@@ -1415,6 +1436,10 @@ function Home() {
 
 
 
+    const displayProductsCount = (productsData?.length ?? 0) > 0 && productsFound === 0
+        ? (productsData?.length ?? 0)
+        : productsFound;
+
     return (
         <div className="pagesContainer homeContainer flex wrap elementToShow">
 
@@ -1496,7 +1521,7 @@ function Home() {
                                 <p onClick={() => orderResultsBy("date")} role="date">Fecha de Subida</p>
                             </div>
                         </div>
-                        <p className="homePageOrderTextFindedQuantity">Se encontraron <span className="homePageOrderTextFindedQuantityBold">{productsFound} Productos</span> en <span className="homePageOrderTextFindedQuantityBold">Joyas1945</span></p>
+                        <p className="homePageOrderTextFindedQuantity">Se encontraron <span className="homePageOrderTextFindedQuantityBold">{displayProductsCount} Productos</span> en <span className="homePageOrderTextFindedQuantityBold">Joyas1945</span></p>
                     </div>
                 </div>
             </div>
@@ -1580,7 +1605,7 @@ function Home() {
 
             <div className="homePagesIndexContainer homePagesIndexContainer--spacer" />
             {/* Mobile-only top pagination indicator */}
-            {productsFound !== 0 && (
+            {displayProductsCount !== 0 && (
                 <div className="homePaginationTopMobile flex">
                     <span className="homePaginationTopMobile_label">
                         Página {pageNumberFromQuery} de {quantityOfPages.current || 1}
@@ -1597,7 +1622,7 @@ function Home() {
                 </div>
             )}
             {
-                productsFound !== 0 &&
+                displayProductsCount !== 0 &&
                 <div className="homePagesIndexContainer flex">
                     <div 
                         className="homePaginationArrow homePaginationButton opcionHoverPinkTransition flex" 
