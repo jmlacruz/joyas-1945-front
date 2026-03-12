@@ -170,10 +170,10 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
                         <h2 className="productDetails_descriptionText">{productData? productData.nombre : ""}</h2>
                         <p className="productDetails_clothText">Paños: <span>{pano}</span></p>
                         <div className="productDetails_price">
-                            {productData?.con_descuento && productData.precio_full != null && (
+                            {!!productData?.con_descuento && productData.precio_full != null && (
                                 <span className="productDetails_priceOriginal">{formatCurrencyPrice(productData.precio_full, "USD")}</span>
                             )}
-                            <span>{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</span>
+                            <span>{productData && productData.precioDolar != null && productData.precioDolar > 0 ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</span>
                         </div>
                         <p className="productDetails_article">Artículo: <span>{productData? productData.codigo : ""}</span> </p>
                         <p className="productDetails_quantityText">CANTIDAD</p>

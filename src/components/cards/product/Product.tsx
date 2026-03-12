@@ -168,9 +168,6 @@ function Product (props: {
                         <div className="productCardPriceCurrentRow flex">
                             <p className="productCardPriceSign">{currencyLabel}</p>
                             <p className={`productCardPrice ${props.con_descuento ? "productCardPrice--discount" : ""}`}>{formattedPrice}</p>
-                            {/* {props.con_descuento === 1 && props.porcentaje_descuento > 0 && (
-                                <span className="productCardDiscountBadge">-{props.porcentaje_descuento}%</span>
-                            )} */}
                         </div>
                     </div>
                     {
@@ -180,7 +177,6 @@ function Product (props: {
                             <p>{props.pano}</p>
                         </div>
                     }
-                    {/* <p className="productCardStock">stock: {props.stock}</p>s */}
                 </div>
                 <div className="productCard_CardQuantitySelect_Cont flex">
                     <div className="productCard_CardQuantitySelect_div productCard_CardQuantitySelect_divBlack cardProductButton flex" onClick={() => handleAddToCart(false)}>-</div>
