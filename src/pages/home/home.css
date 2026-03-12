@@ -453,7 +453,17 @@
 }
 
 .filtersShownTypes {
-    white-space: nowrap;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+    padding: 0 16px;
+}
+
+.filtersShownTypes .filterInputCont {
+    flex: 0 0 calc(33.333% - 6px);
+    max-width: calc(33.333% - 6px);
+    justify-content: flex-start;
+    margin: 0;
 }
 
 /* Price range group - fixed width, never clips */
@@ -797,6 +807,8 @@
     max-width: none;
     padding-left: 0rem;
     padding-right: 0rem;
+    padding-top: 0.7rem;
+    padding-bottom: 0.7em;
 }
 
 .filtersShownInt2Cont {
