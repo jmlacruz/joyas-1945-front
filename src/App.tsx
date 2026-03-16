@@ -4,11 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useSearchParams } from "react-router-dom";
 import { StreamChat } from "stream-chat";
 import BuyActivityPopUp from "./components/buyActivityPopUp/BuyActivityPopUp";
+import FloatingWhatsAppButton from "./components/floatingWhatsAppButton/FloatingWhatsAppButton";
 import Footer from "./components/footer/Footer";
 import LandingNavBar from "./components/landing/landingNavBar/LandingNavBar";
 import NavBar from "./components/navBar/NavBar";
 import OrderHTML from "./components/orderForMail/OrderHTML";
 import { BrandsProvider } from "./context/brandsContext";
+import { CurrentProductProvider } from "./context/currentProductContext";
 import { SpinnerContext } from "./context/spinnerContext";
 import { StreamChatContext } from "./context/streamChatContext";
 import { updateCart } from "./features/cartSlice";
@@ -38,7 +40,6 @@ import "./styles/generalStyles.css";
 import { ActivityData, CartDataFromDB, LastSessionTimestamp, StreamChatMessage } from "./types";
 import { SpinnerContextType } from "./types/spinner";
 import { isValidJSON } from "./utils/utils";
-import FloatingWhatsAppButton from "./components/floatingWhatsAppButton/FloatingWhatsAppButton";
 
 function App () {
     return (
@@ -245,18 +246,20 @@ function MainApp () {
   
     return (
         <BrandsProvider>
-            {buyActivityPopUp}
-            {spinner}
-            {getNavBar()}
-            <Routes>
-                {routesFunction()}
-                <Route path="/landing" element={<Landing/>}/>
-                <Route path="/landing/news" element={<News/>}/>
-                <Route path="/landing/reviews" element={<Reviews/>}/>
-                <Route path="/landing/novedad/:slug" element={<New/>}/>
-            </Routes>
-            <Footer/>
-            <FloatingWhatsAppButton />
+            <CurrentProductProvider>
+                {buyActivityPopUp}
+                {spinner}
+                {getNavBar()}
+                <Routes>
+                    {routesFunction()}
+                    <Route path="/landing" element={<Landing/>}/>
+                    <Route path="/landing/news" element={<News/>}/>
+                    <Route path="/landing/reviews" element={<Reviews/>}/>
+                    <Route path="/landing/novedad/:slug" element={<New/>}/>
+                </Routes>
+                <Footer/>
+                <FloatingWhatsAppButton />
+            </CurrentProductProvider>
         </BrandsProvider>
     );
 }

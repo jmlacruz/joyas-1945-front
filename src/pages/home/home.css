@@ -489,8 +489,8 @@
 }
 
 .filterPriceInput {
-    width: 42px;  /* Compact width (~40% reduction) */
-    min-width: 35px;
+    width: 52px;  /* Slightly wider for min/max inputs */
+    min-width: 52px;
     padding: 2px 4px;
     font-size: 14px;  /* Exact 14px */
 }
@@ -534,7 +534,7 @@
     }
 
     .filterPriceInput {
-        width: 50px;
+        width: 58px;
     }
 
     .filterButton {
@@ -555,7 +555,7 @@
     }
 
     .filterPriceInput {
-        width: 45px;
+        width: 54px;
     }
 
     .filterButton {
@@ -592,8 +592,8 @@
     }
 
     .filterPriceInput {
-        width: 38px;
-        min-width: 32px;
+        width: 46px;
+        min-width: 38px;
         padding: 2px 3px;
         font-size: 11px;
     }
@@ -648,8 +648,8 @@
     }
 
     .filterPriceInput {
-        width: 40px;
-        min-width: 32px;
+        width: 48px;
+        min-width: 48px;
         padding: 2px 3px;
         font-size: 11px;
     }
@@ -1097,44 +1097,47 @@
         padding-bottom: 0.5rem;
     }
 
-    /* Currency+Price row: currency left, price group right; larger gap to avoid mis-taps */
+    /* Mobile: stacked layout - row 1: USD/ARS, row 2: min-max, row 3: Filtrar */
     .filtersCurrencyPriceRow {
         display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 20px;  /* Increased from 12px (saved from separator) for touch target separation */
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
         width: 100%;
         order: 2;
     }
 
     .filtersCurrencyCol {
-        flex: 0 0 auto;
+        width: 100%;
+        display: flex;
+        justify-content: center;
     }
 
     .filtersPriceCol {
-        flex: 1 1 auto;
+        width: 100%;
         min-width: 0;
         padding-left: 0;
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-end;
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .filterPriceRangeTitle {
         display: none;  /* Hide PRECIO title on mobile */
     }
 
-    /* priceGroup: minMaxGroup + Filtrar; micro-gap around separator */
+    /* Row 2: min-max inputs; Row 3: Filtrar button (flex-wrap + full-width button) */
     .filterInputRow {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 2px;  /* Very tight around "-" (<=2px each side) */
-        flex: 1;
-        justify-content: flex-end;
+        gap: 2px;
+        justify-content: center;
+        width: 100%;
     }
 
     .filterInputRow .filterButton {
-        margin-top: 0 !important;
+        flex-basis: 100%;
+        margin-top: 0.5rem;
     }
 
     .filterPriceInputSeparator {
@@ -1143,9 +1146,10 @@
         width: auto;
     }
 
-    /* Inputs: keep 64px (no width increase; saved space went to outer gap) */
+    /* Inputs: flex to occupy all available space on mobile */
     .filterPriceInput {
-        width: 64px;
+        flex: 1 1 0;
+        min-width: 0;
         font-size: 16px;
         padding: 6px 8px;
     }
@@ -1460,44 +1464,47 @@
         padding-bottom: 0.5rem;
     }
 
-    /* Currency+Price row: currency left, price group right; larger gap to avoid mis-taps */
+    /* Mobile: stacked layout - row 1: USD/ARS, row 2: min-max, row 3: Filtrar */
     .filtersCurrencyPriceRow {
         display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 20px;  /* Increased from 12px (saved from separator) for touch target separation */
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
         width: 100%;
         order: 2;
     }
 
     .filtersCurrencyCol {
-        flex: 0 0 auto;
+        width: 100%;
+        display: flex;
+        justify-content: center;
     }
 
     .filtersPriceCol {
-        flex: 1 1 auto;
+        width: 100%;
         min-width: 0;
         padding-left: 0;
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-end;
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .filterPriceRangeTitle {
         display: none;  /* Hide PRECIO title on mobile */
     }
 
-    /* priceGroup: minMaxGroup + Filtrar; micro-gap around separator */
+    /* Row 2: min-max inputs; Row 3: Filtrar button (flex-wrap + full-width button) */
     .filterInputRow {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 2px;  /* Very tight around "-" (<=2px each side) */
-        flex: 1;
-        justify-content: flex-end;
+        gap: 2px;
+        justify-content: center;
+        width: 100%;
     }
 
     .filterInputRow .filterButton {
-        margin-top: 0 !important;
+        flex-basis: 100%;
+        margin-top: 0.5rem;
     }
 
     .filterPriceInputSeparator {
@@ -1506,9 +1513,10 @@
         width: auto;
     }
 
-    /* Inputs: keep 64px (no width increase; saved space went to outer gap) */
+    /* Inputs: flex to occupy all available space on mobile */
     .filterPriceInput {
-        width: 64px;
+        flex: 1 1 0;
+        min-width: 0;
         font-size: 16px;
         padding: 6px 8px;
     }
@@ -1539,13 +1547,6 @@
         flex-wrap: wrap;
         justify-content: center;
         gap: 0.4rem;
-    }
-
-    /* iOS zoom fix; input width 64px (saved space went to outer gap) */
-    .filterPriceInput {
-        width: 64px;
-        font-size: 16px;
-        padding: 6px 8px;
     }
 
     .filterPriceInput::placeholder {

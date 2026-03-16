@@ -1,6 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useCurrentProduct } from "../../context/currentProductContext";
 import { SpinnerContext } from "../../context/spinnerContext";
 import { StreamChatContext } from "../../context/streamChatContext";
 import { addToCart, subtractToCart } from "../../features/cartSlice";
@@ -18,8 +19,8 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
     const cart = useSelector((state: RootState) => state.cart.value);
     const dispatch = useDispatch();
     const {showSpinner} = useContext(SpinnerContext);
+    const {setProductCode} = useCurrentProduct();
     const [productData, setProductData] = useState <Partial<Producto> | null> (null);
-    const [imageToDownloadSrc, setImageToDownload] = useState ("");
     const [quantity, setQuantity] = useState (0);
     const navigate = useNavigate();
     const { email, city, name, lastName } = useSelector((state: RootState) => state.user.value);
@@ -32,6 +33,7 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
         showSpinner(true);  
 
         if (!props.productID) {
+            setProductCode(null);
             if (props.onClose) {
                 props.onClose();
             } else {
@@ -46,13 +48,14 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
             if (response.success && response.data && response.data.length) {
                 const productData: Producto = response.data[0];
                 setProductData(productData);
-                setImageToDownload(productData.foto1);
+                setProductCode(productData.codigo ?? null);
                 setPano(await getPanoByProductId(props.productID));
                 props.onLoaded?.(); // Notificar que los datos están listos
             }
         })();
-       
-    }, [props.productID]);
+
+        return () => setProductCode(null);
+    }, [props.productID, setProductCode]);
     
     useEffect(() => {
         const productData = cart.cartItems.find((product) => product.itemId === props.productID);
@@ -140,13 +143,40 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
         }  
     };
 
-    const downloadImage = (url: string) => {
-        const a = document.createElement("a");
-        a.href = url;
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+    const downloadProductImages = async () => {
+        if (!productData) return;
+        const images = [productData.foto1, productData.foto2].filter((url): url is string => !!url);
+        if (images.length === 0) return;
+
+        const baseName = (productData.nombre || productData.codigo || "producto").replace(/[^a-zA-Z0-9-_]/g, "_");
+
+        const downloadOne = async (url: string, index: number) => {
+            try {
+                const response = await fetch(url, { mode: "cors" });
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = blobUrl;
+                a.download = images.length > 1 ? `${baseName}_${index + 1}.jpg` : `${baseName}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+            } catch {
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = images.length > 1 ? `${baseName}_${index + 1}.jpg` : `${baseName}.jpg`;
+                a.target = "_blank";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        };
+
+        for (let i = 0; i < images.length; i++) {
+            await downloadOne(images[i], i);
+            if (i < images.length - 1) await new Promise((r) => setTimeout(r, 300));
+        }
     };
     
     const handleChangeImage = (next: boolean) => {
@@ -234,7 +264,7 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
                 <div className="productDetailsPortrait_quantityButton flex" onClick={() => handleItemQuantity(true)}>+</div>
             </div>
             <div className="productDetailsPortrait_priceCont flex">
-                <div className="productDetailsPortrait_download flex" onClick={() => downloadImage(imageToDownloadSrc)}>
+                <div className="productDetailsPortrait_download flex" onClick={downloadProductImages}>
                     <img src="/images/icons/downloadImage.png" alt="Descargar Imagen" />
                 </div>
                 <div className="productDetailsPortrait_price flex column">
@@ -243,9 +273,6 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
                     )}
                     <span>{productData && productData.precioDolar ? formatCurrencyPrice(productData.precioDolar, "USD") : ""}</span>
                 </div>
-                <div className="productDetailsPortrait_ws flex">
-                    <img src="/images/icons/ws.png" alt="WhatsApp" />
-                </div>
             </div>
             <div className="productDetailsPortrait_descriptionCont flex column">
                 <h2 className="productDetailsPortrait_descriptionText">{productData ? productData.nombre?.toUpperCase() : ""}</h2>
@@ -253,6 +280,7 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
                     pano &&
                     <p className="productDetails_clothText">Paños: <span>{pano}</span></p> 
                 }
+                <p className="productDetails_article">Artículo: <span>{productData ? productData.codigo : ""}</span></p>
             </div>
             <div className="productDetailsPortrait_mainImgCont">
                 <div className="productDetailsPortrait_mainImgSliderCont flex">
@@ -266,10 +294,6 @@ function ProductDetails_portrait (props: {productID: number, onClose?: () => voi
                         <div className="productDetailsPortrait_mainImg_index" onClick={(e) => handleSelectImgIndex(true, e)}></div>
                     </div>
                 }
-            </div>
-            <div className="productDetailsPortrait_codeCont flex">
-                <p className="productDetailsPortrait_code">Código Prod.:</p>
-                <p className="productDetailsPortrait_code flex">{productData ? productData.codigo : ""}</p>
             </div>
         </div>
     );

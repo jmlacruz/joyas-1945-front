@@ -1,6 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useCurrentProduct } from "../../context/currentProductContext";
 import { SpinnerContext } from "../../context/spinnerContext";
 import { StreamChatContext } from "../../context/streamChatContext";
 import { replaceToCart } from "../../features/cartSlice";
@@ -21,6 +22,7 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
     const navigate = useNavigate();
     const cart = useSelector((state: RootState) => state.cart.value);
     const dispatch = useDispatch();
+    const { setProductCode } = useCurrentProduct();
     const {showSpinner} = useContext(SpinnerContext);
     const [productData, setProductData] = useState <Partial<Producto> | null> (null);
     const [imageToDownloadSrc, setImageToDownloadSrc] = useState ("");
@@ -33,22 +35,23 @@ function ProductDetails_landsCape (props: {productID: number, onClose?: () => vo
     const autoChangeImageDelayInSeg = useRef(5);
 
     useEffect(() => {
-
         showSpinner(true);
-    
+
         (async () => {
             const response = await getProductByID(props.productID);
             if (response.success && response.data && response.data.length) {
                 const productData: Producto = response.data[0];
                 setProductData(productData);
+                setProductCode(productData.codigo ?? null);
                 setImageToDownloadSrc(productData.foto1);
                 setProductDetailSlider(<ProductDetailSlider brandId={productData.marca} categoryId={productData.categoria} onProductClick={props.onProductClick}/>);
                 setPano(await getPanoByProductId(props.productID));
                 props.onLoaded?.(); // Notificar que los datos están listos
             }
         })();
-        
-    }, [props]);     
+
+        return () => setProductCode(null);
+    }, [props.productID, setProductCode]);     
 
     useEffect(() => {
         const productData = cart.cartItems.find((product) => product.itemId === props.productID);

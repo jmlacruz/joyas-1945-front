@@ -101,6 +101,23 @@
     font-size: var(--font-size-large);
 }
 
+/* Paño y Artículo - mismo estilo que vista full */
+.productDetailsPortrait_descriptionCont .productDetails_clothText {
+    text-align: left;
+    font-size: var(--font-size-large);
+    font-family: var(--font-style-black);
+}
+
+.productDetailsPortrait_descriptionCont .productDetails_clothText span {
+    font-size: inherit;
+    font-family: var(--font-style-light);
+}
+
+.productDetailsPortrait_descriptionCont .productDetails_article {
+    padding-top: 1rem;
+    font-family: var(--font-style-bold);
+}
+
 .productDetailsPortrait_mainImgCont {
     position: relative;
     width: 100%;
