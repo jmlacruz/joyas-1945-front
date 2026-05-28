@@ -1273,20 +1273,20 @@ function Home() {
     /**************************** Apertura y cierre de la ventana de orden de productos  *******************************/
 
     const closeDropDown = () => {
-        const filterOrderOptionsDropDownCont = document.querySelector(".filterOrderOptionsDropDownCont") as HTMLDivElement;
-        if (!filterOrderOptionsDropDownCont) return;
-        filterOrderOptionsDropDownCont.classList.add("displayNone");
+        const allDropdowns = document.querySelectorAll(".filterOrderOptionsDropDownCont");
+        allDropdowns.forEach(dropdown => dropdown.classList.add("displayNone"));
         document.body.removeEventListener("click", closeDropDown);
     };
 
     const handleShowDropDown = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const filterOrderOptionsDropDownCont = document.querySelector(".filterOrderOptionsDropDownCont") as HTMLDivElement;
-        if (filterOrderOptionsDropDownCont.getAttribute("class")?.includes("displayNone")) {
-            filterOrderOptionsDropDownCont.classList.remove("displayNone");
+        const container = e.currentTarget as HTMLDivElement;
+        const dropdown = container.querySelector(".filterOrderOptionsDropDownCont") as HTMLDivElement;
+        if (dropdown.getAttribute("class")?.includes("displayNone")) {
+            dropdown.classList.remove("displayNone");
             document.body.addEventListener("click", closeDropDown);
         } else {
-            filterOrderOptionsDropDownCont.classList.add("displayNone");
+            dropdown.classList.add("displayNone");
         }
     };  
 
