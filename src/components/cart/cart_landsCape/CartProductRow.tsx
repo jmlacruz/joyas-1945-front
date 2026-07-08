@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { addToCart, subtractToCart, deleteItem, addOrEditObservation } from "../../../features/cartSlice";
 import { useRef, useState } from "react";
 
-function CartProductRow (props: {description: string, unitPrice: string, totalPrice: string, code: string, imgSrc: string, id: number, quantity: number, observation: string}) {
+function CartProductRow (props: {description: string, unitPrice: string, totalPrice: string, code: string, imgSrc: string, id: number, quantity: number, observation: string, dolar?: boolean}) {
 
     const dispatch = useDispatch();
     const observation1ContRef = useRef <HTMLDivElement | null> (null);
@@ -101,13 +101,13 @@ function CartProductRow (props: {description: string, unitPrice: string, totalPr
                     </div>
                 </div>
             </td>
-            <td className="cartTable_prices_texts">${props.unitPrice}</td>
+            <td className="cartTable_prices_texts">{props.dolar ? "USD" : "$"}{props.unitPrice}</td>
             <td>
                 <div className="cartTable_flexDivCell flex">
                     <AddButton width={5} bgColor="transparent" quantity={props.quantity} addFunction={() => dispatch(addToCart(props.id))} susFunction={() => dispatch(subtractToCart(props.id))}/>
                 </div>
             </td>
-            <td className="cartTable_prices_texts">${props.totalPrice}</td>
+            <td className="cartTable_prices_texts">{props.dolar ? "USD" : "$"}{props.totalPrice}</td>
             <td>
                 <div className="cartTable_flexDivCell flex">
                     <button className="cartTable_deleteButton flex" title="Eliminar producto" onClick={() => dispatch(deleteItem(props.id))}>✖</button>

@@ -133,7 +133,7 @@ function Cart() {
         (async() => {
             const cartProductsIdsArr = cartItems.map((item) => item.itemId);
             const cartProductsIdsAndObsArr = cartItems.map((item) => ({itemId: item.itemId, observation: item.observation}));
-            const fieldsRequiredArr: (keyof Producto)[] = ["nombre", "precio", "foto1", "id", "foto1", "codigo"];
+            const fieldsRequiredArr: (keyof Producto)[] = ["nombre", "precio", "foto1", "id", "foto1", "codigo", "precioDolar"];
             const response = await getProductsByIDs({iDsArr: cartProductsIdsArr, fieldsArr: fieldsRequiredArr});
             
             if (response.success && response.data && Array.isArray(response.data) as boolean) {
@@ -157,6 +157,7 @@ function Cart() {
                         id={product.id}
                         quantity={product.quantity}
                         observation={cartProductsIdsAndObsArr.find((productData) => productData.itemId === product.id)?.observation || ""}
+                        dolar={dolar}
                     />;
                 });
 
@@ -185,7 +186,7 @@ function Cart() {
                 orderForMailData.current.generalObservations = "";
             }
         })();
-    }, [cartItems]);
+    }, [cartItems, dolar]);
 
     useEffect(() => {                                                                                            //Seteo de spinner al montar el componente o cambiar la lista de productos en carrito
         if (!cartProductsRows.length) return;
@@ -407,7 +408,7 @@ function Cart() {
                     </div>
                     <div className="cartPortrait_total flex column">
                         <p className="cartPortrait_totalText">Total del Pedido</p>
-                        <p className="cartPortrait_totalNumber">${total}</p>
+                        <p className="cartPortrait_totalNumber">{dolar ? "USD" : "$"}{total}</p>
                         <p className="cartPortrait_totalRates">* Sin impuestos</p>
                     </div>
                 </div>

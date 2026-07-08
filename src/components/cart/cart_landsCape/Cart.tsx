@@ -132,13 +132,13 @@ function Cart() {
         (async() => {
             const cartProductsIdsArr = cartItems.map((item) => item.itemId);
             const cartProductsIdsAndObsArr = cartItems.map((item) => ({itemId: item.itemId, observation: item.observation}));
-            const fieldsRequiredArr: (keyof Producto)[] = ["nombre", "precio", "foto1", "id", "foto1", "codigo"];
+            const fieldsRequiredArr: (keyof Producto)[] = ["nombre", "precio", "foto1", "id", "foto1", "codigo", "precioDolar"];
             const response = await getProductsByIDs({iDsArr: cartProductsIdsArr, fieldsArr: fieldsRequiredArr});
             
             if (response.success && response.data && Array.isArray(response.data) as boolean) {
                 const productsArrFromDB: Producto[] = response.data;
                 const productsArrWithQuantity: (Producto & {quantity: number})[] = productsArrFromDB.map((productFromDB: any) => ({...productFromDB, quantity: cartItems.find((itemInCart) => itemInCart.itemId === productFromDB.id)?.quantity}));
-                const total = productsArrWithQuantity.reduce((acc: number, item: any) => acc + (item.quantity * (dolar ? formatDecimalPrice(item.precioDolar) : item.precio )), 0);
+                const total = productsArrWithQuantity.reduce((acc: number, item: any) => acc + (item.quantity * (dolar ? (item.precioDolar || 0) : item.precio)), 0);
                 const totalParsed = dolar ? total.toFixed(2) : total.toString();
 
                 const cartProductsJSX = productsArrWithQuantity.map((product, index: number) => {
@@ -156,6 +156,7 @@ function Cart() {
                         id={product.id}
                         quantity={product.quantity}
                         observation={cartProductsIdsAndObsArr.find((productData) => productData.itemId === product.id)?.observation || ""}
+                        dolar={dolar}
                     />;
                 });
 
@@ -184,7 +185,7 @@ function Cart() {
                 orderForMailData.current.generalObservations = "";
             }
         })();
-    }, [cartItems]);
+    }, [cartItems, dolar]);
 
     useEffect(() => {                                                                                            //Seteo de spinner al montar el componente o cambiar la lista de productos en carrito
         if (!cartProductsRows.length) return;
@@ -420,7 +421,7 @@ function Cart() {
                                 <td colSpan={3}>
                                     <div className="cartTable_flexDivCell cartTable_total flex column">
                                         <p className="cartTable_total_text1">Total del Pedido</p>
-                                        <p className="cartTable_total_price">${total}</p>
+                                        <p className="cartTable_total_price">{dolar ? "USD" : "$"}{total}</p>
                                         <p className="cartTable_total_text2">* Sin Impuestos</p>
                                     </div>
                                 </td>

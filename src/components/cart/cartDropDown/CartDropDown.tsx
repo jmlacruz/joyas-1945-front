@@ -26,7 +26,7 @@ function CartDropDown() {
             setShowSpinner(true);
 
             const cartProductsIdsArr = cart.cartItems.map((item) => item.itemId);
-            const response = await getProductsByIDs({iDsArr: cartProductsIdsArr, fieldsArr: ["nombre", "precio", "foto1", "id"]});
+            const response = await getProductsByIDs({iDsArr: cartProductsIdsArr, fieldsArr: ["nombre", "precio", "foto1", "id", "precioDolar"]});
             
             if (response.success && response.data && response.data.length) {
                 const productsArrFromDB: Producto[] = response.data;
