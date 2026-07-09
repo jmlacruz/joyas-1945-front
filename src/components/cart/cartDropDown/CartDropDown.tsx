@@ -26,18 +26,25 @@ function CartDropDown() {
             setShowSpinner(true);
 
             const cartProductsIdsArr = cart.cartItems.map((item) => item.itemId);
-            const response = await getProductsByIDs({iDsArr: cartProductsIdsArr, fieldsArr: ["nombre", "precio", "foto1", "id"]});
+            const response = await getProductsByIDs({iDsArr: cartProductsIdsArr, fieldsArr: ["nombre", "precio", "foto1", "id", "precioDolar", "con_descuento", "precio_full"]});
             
             if (response.success && response.data && response.data.length) {
                 const productsArrFromDB: Producto[] = response.data;
                 const productsArrWithQuantity = productsArrFromDB.map((productFromDB: any) => ({...productFromDB, quantity: cart.cartItems.find((itemInCart) => itemInCart.itemId === productFromDB.id)?.quantity}));
                 const total = productsArrWithQuantity.reduce((acc: number, item: any) => acc + (item.quantity * (dolar ? item.precioDolar : item.precio)), 0);
 
+                const dropDownFormatter = new Intl.NumberFormat(dolar ? "en-US" : "es-AR", { style: "currency", currency: dolar ? "USD" : "ARS" });
                 const cartProductsJSX = productsArrWithQuantity.map((product: any, index: number) => 
                     <div className="cartDropDrown_productCont flex" key={index}>
                         <img src={product.thumbnail1} alt={product.nombre} className="cartDropDrown_img" />
                         <div className="cartDropDrown_infoCont flex column">
                             <p className="cartDropDrown_productDescription">{`${product.quantity} x ${product.nombre}`}</p>
+                            {product.con_descuento === 1 && product.precio_full != null && (
+                                <div className="cartDropDrown_fullPriceRow">
+                                    <span className="cartDropDrown_fullPriceLabel">Precio</span>
+                                    <span className="cartDropDrown_fullPrice">{dropDownFormatter.format(product.precio_full)}</span>
+                                </div>
+                            )}
                             <p className="cartDropDrown_productPrice">{dolar ? "USD" : "$"} {product.precioDolar && product.precio ? (dolar ? formatDecimalPrice(product.precioDolar): product.precio) : ""}</p>
                         </div>
                     </div>

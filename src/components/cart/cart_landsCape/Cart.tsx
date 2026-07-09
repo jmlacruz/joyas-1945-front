@@ -132,19 +132,23 @@ function Cart() {
         (async() => {
             const cartProductsIdsArr = cartItems.map((item) => item.itemId);
             const cartProductsIdsAndObsArr = cartItems.map((item) => ({itemId: item.itemId, observation: item.observation}));
-            const fieldsRequiredArr: (keyof Producto)[] = ["nombre", "precio", "foto1", "id", "foto1", "codigo"];
+            const fieldsRequiredArr: (keyof Producto)[] = ["nombre", "precio", "foto1", "id", "foto1", "codigo", "precioDolar", "con_descuento", "precio_full"];
             const response = await getProductsByIDs({iDsArr: cartProductsIdsArr, fieldsArr: fieldsRequiredArr});
             
             if (response.success && response.data && Array.isArray(response.data) as boolean) {
                 const productsArrFromDB: Producto[] = response.data;
                 const productsArrWithQuantity: (Producto & {quantity: number})[] = productsArrFromDB.map((productFromDB: any) => ({...productFromDB, quantity: cartItems.find((itemInCart) => itemInCart.itemId === productFromDB.id)?.quantity}));
-                const total = productsArrWithQuantity.reduce((acc: number, item: any) => acc + (item.quantity * (dolar ? formatDecimalPrice(item.precioDolar) : item.precio )), 0);
+                const total = productsArrWithQuantity.reduce((acc: number, item: any) => acc + (item.quantity * (dolar ? (item.precioDolar || 0) : item.precio)), 0);
                 const totalParsed = dolar ? total.toFixed(2) : total.toString();
 
+                const landscapeFormatter = new Intl.NumberFormat(dolar ? "en-US" : "es-AR", { style: "currency", currency: dolar ? "USD" : "ARS" });
                 const cartProductsJSX = productsArrWithQuantity.map((product, index: number) => {
                     const unitPriceStr = product.precioDolar && product.precio ? (dolar ? formatDecimalPrice(product.precioDolar) : (Math.ceil(product.precio)).toString()) : "";
                     const totalPriceNum = parseFloat(unitPriceStr) * product.quantity;
                     const totalPriceStr = (dolar ? totalPriceNum.toFixed(2) : totalPriceNum).toString();
+                    const fullPriceStr = (product as any).con_descuento && (product as any).precio_full != null
+                        ? landscapeFormatter.format((product as any).precio_full)
+                        : "";
 
                     return <CartProductRow
                         key={index}
@@ -156,6 +160,9 @@ function Cart() {
                         id={product.id}
                         quantity={product.quantity}
                         observation={cartProductsIdsAndObsArr.find((productData) => productData.itemId === product.id)?.observation || ""}
+                        dolar={dolar}
+                        conDescuento={(product as any).con_descuento ? 1 : 0}
+                        fullPrice={fullPriceStr}
                     />;
                 });
 
@@ -184,7 +191,7 @@ function Cart() {
                 orderForMailData.current.generalObservations = "";
             }
         })();
-    }, [cartItems]);
+    }, [cartItems, dolar]);
 
     useEffect(() => {                                                                                            //Seteo de spinner al montar el componente o cambiar la lista de productos en carrito
         if (!cartProductsRows.length) return;
@@ -420,7 +427,7 @@ function Cart() {
                                 <td colSpan={3}>
                                     <div className="cartTable_flexDivCell cartTable_total flex column">
                                         <p className="cartTable_total_text1">Total del Pedido</p>
-                                        <p className="cartTable_total_price">${total}</p>
+                                        <p className="cartTable_total_price">{dolar ? "USD" : "$"}{total}</p>
                                         <p className="cartTable_total_text2">* Sin Impuestos</p>
                                     </div>
                                 </td>

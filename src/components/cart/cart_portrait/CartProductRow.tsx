@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { addToCart, subtractToCart, deleteItem, addOrEditObservation } from "../../../features/cartSlice";
 import { useRef, useState } from "react";
 
-function CartProductRow (props: {description: string, unitPrice: string, totalPrice: string, code: string, imgSrc: string, id: number, quantity: number, observation: string}) {
+function CartProductRow (props: {description: string, unitPrice: string, totalPrice: string, code: string, imgSrc: string, id: number, quantity: number, observation: string, dolar?: boolean, conDescuento?: number, fullPrice?: string}) {
 
     const dispatch = useDispatch();
     const [showAditionalCells, setShowAditionalCells] = useState(false);
@@ -134,8 +134,14 @@ function CartProductRow (props: {description: string, unitPrice: string, totalPr
 
                 <tr>
                     <td colSpan={3}>
+                        {props.conDescuento === 1 && props.fullPrice && (
+                            <div className="cartItem_fullPriceRow">
+                                <span className="cartItem_fullPriceLabel">Precio</span>
+                                <span className="cartItem_fullPrice">{props.fullPrice}</span>
+                            </div>
+                        )}
                         <div className="cartTable_flexDivCell cartTablePortrait_priceCont flex">
-                            {props.quantity} X <span className="sign">$</span> {props.unitPrice} = <span className="sign">$</span> <span>{props.totalPrice}</span>
+                            {props.quantity} X <span className="sign">{props.dolar ? "USD" : "$"}</span> {props.unitPrice} = <span className="sign">{props.dolar ? "USD" : "$"}</span> <span>{props.totalPrice}</span>
                         </div>
                     </td>
                 </tr>

@@ -301,6 +301,31 @@ td.product-info {
     text-decoration: line-through;
 }
 
+/* Struck-through original price row shown in cart items when con_descuento === 1 */
+.cartItem_fullPriceRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    opacity: 0.7;
+    margin-bottom: 0.15rem;
+}
+
+.cartItem_fullPriceLabel {
+    font-family: var(--font-style-medium);
+    font-size: 10px;
+    color: var(--text-gray-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cartItem_fullPrice {
+    text-decoration: line-through;
+    color: var(--text-gray-color);
+    font-size: 12px;
+    font-family: var(--font-style-medium);
+}
+
 .cartTable_buyerTypeCont {
     width: 100%;
     margin-top: 1.5rem;
