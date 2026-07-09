@@ -133,7 +133,7 @@ function Cart() {
         (async() => {
             const cartProductsIdsArr = cartItems.map((item) => item.itemId);
             const cartProductsIdsAndObsArr = cartItems.map((item) => ({itemId: item.itemId, observation: item.observation}));
-            const fieldsRequiredArr: (keyof Producto)[] = ["nombre", "precio", "foto1", "id", "foto1", "codigo", "precioDolar"];
+            const fieldsRequiredArr: (keyof Producto)[] = ["nombre", "precio", "foto1", "id", "foto1", "codigo", "precioDolar", "con_descuento", "precio_full"];
             const response = await getProductsByIDs({iDsArr: cartProductsIdsArr, fieldsArr: fieldsRequiredArr});
             
             if (response.success && response.data && Array.isArray(response.data) as boolean) {
@@ -142,10 +142,14 @@ function Cart() {
                 const total = productsArrWithQuantity.reduce((acc: number, item: any) => acc + (item.quantity * (dolar ? item.precioDolar : item.precio )), 0);
                 const totalParsed = dolar ? total.toFixed(2) : total.toString();
 
+                const portraitFormatter = new Intl.NumberFormat(dolar ? "en-US" : "es-AR", { style: "currency", currency: dolar ? "USD" : "ARS" });
                 const cartProductsJSX = productsArrWithQuantity.map((product, index: number) => {
                     const unitPriceStr = product.precioDolar && product.precio ? (dolar ? formatDecimalPrice(product.precioDolar) : (Math.ceil(product.precio)).toString()) : "";
                     const totalPriceNum = parseFloat(unitPriceStr) * product.quantity;
                     const totalPriceStr = (dolar ? totalPriceNum.toFixed(2) : totalPriceNum).toString();
+                    const fullPriceStr = (product as any).con_descuento && (product as any).precio_full != null
+                        ? portraitFormatter.format((product as any).precio_full)
+                        : "";
 
                     return <CartProductRow
                         key={index}
@@ -158,6 +162,8 @@ function Cart() {
                         quantity={product.quantity}
                         observation={cartProductsIdsAndObsArr.find((productData) => productData.itemId === product.id)?.observation || ""}
                         dolar={dolar}
+                        conDescuento={(product as any).con_descuento ? 1 : 0}
+                        fullPrice={fullPriceStr}
                     />;
                 });
 

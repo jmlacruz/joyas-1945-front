@@ -94,6 +94,30 @@
     margin-top: 0.5rem;
 }
 
+/* Struck-through original price in dropdown when con_descuento === 1 */
+.cartDropDrown_fullPriceRow {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    opacity: 0.7;
+    margin-top: 0.35rem;
+}
+
+.cartDropDrown_fullPriceLabel {
+    font-family: var(--font-style-medium);
+    font-size: 10px;
+    color: var(--text-gray-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cartDropDrown_fullPrice {
+    text-decoration: line-through;
+    color: var(--text-gray-color);
+    font-size: 12px;
+    font-family: var(--font-style-medium);
+}
+
 .cartDropDrown_resume_total {
     font-family: var(--font-style-black);
     margin-left: 0.25rem;

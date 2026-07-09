@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { addToCart, subtractToCart, deleteItem, addOrEditObservation } from "../../../features/cartSlice";
 import { useRef, useState } from "react";
 
-function CartProductRow (props: {description: string, unitPrice: string, totalPrice: string, code: string, imgSrc: string, id: number, quantity: number, observation: string, dolar?: boolean}) {
+function CartProductRow (props: {description: string, unitPrice: string, totalPrice: string, code: string, imgSrc: string, id: number, quantity: number, observation: string, dolar?: boolean, conDescuento?: number, fullPrice?: string}) {
 
     const dispatch = useDispatch();
     const observation1ContRef = useRef <HTMLDivElement | null> (null);
@@ -101,7 +101,15 @@ function CartProductRow (props: {description: string, unitPrice: string, totalPr
                     </div>
                 </div>
             </td>
-            <td className="cartTable_prices_texts">{props.dolar ? "USD" : "$"}{props.unitPrice}</td>
+            <td className="cartTable_prices_texts">
+                {props.conDescuento === 1 && props.fullPrice && (
+                    <div className="cartItem_fullPriceRow">
+                        <span className="cartItem_fullPriceLabel">Precio</span>
+                        <span className="cartItem_fullPrice">{props.fullPrice}</span>
+                    </div>
+                )}
+                {props.dolar ? "USD" : "$"}{props.unitPrice}
+            </td>
             <td>
                 <div className="cartTable_flexDivCell flex">
                     <AddButton width={5} bgColor="transparent" quantity={props.quantity} addFunction={() => dispatch(addToCart(props.id))} susFunction={() => dispatch(subtractToCart(props.id))}/>
